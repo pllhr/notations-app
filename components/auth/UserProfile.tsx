@@ -43,6 +43,11 @@ export const UserProfile = ({ user }: UserProfileProps) => {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            if (file.size > 2 * 1024 * 1024) { // 2MB limit
+                alert("File size too large. Please upload an image smaller than 2MB.");
+                return;
+            }
+
             const reader = new FileReader();
             reader.onloadend = () => {
                 setImage(reader.result as string);

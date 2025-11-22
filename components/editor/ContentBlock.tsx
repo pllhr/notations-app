@@ -25,10 +25,10 @@ export const ContentBlock: React.FC<ContentBlockProps> = ({
   onFocus
 }) => {
   const contentEditableRef = useRef<HTMLElement>(null);
-  
+
   // 1. Track the content we believe is in the DOM (user's typing + external updates)
   const lastHtmlRef = useRef(html);
-  
+
   // 2. Track the content we want React to use for rendering.
   // We separate this to control WHEN React updates the DOM.
   const renderHtmlRef = useRef(html);
@@ -37,8 +37,8 @@ export const ContentBlock: React.FC<ContentBlockProps> = ({
   // If 'html' (prop) differs from 'lastHtmlRef' (local), it is an EXTERNAL change 
   // (like Undo, Redo, AI, or loading a new note). We must apply it.
   if (html !== lastHtmlRef.current) {
-      lastHtmlRef.current = html;
-      renderHtmlRef.current = html;
+    lastHtmlRef.current = html;
+    renderHtmlRef.current = html;
   }
   // If 'html' === 'lastHtmlRef', it is a LOOPBACK (User typed -> State updated -> Prop passed back).
   // We do NOT update 'renderHtmlRef' in this case.

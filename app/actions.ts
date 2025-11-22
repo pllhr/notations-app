@@ -2,6 +2,52 @@
 
 import pool from '../lib/db';
 import { Note } from '../types';
+import { z } from 'zod';
+import bcrypt from 'bcryptjs';
+import { signIn } from '../auth';
+import { AuthError } from 'next-auth';
+
+// --- Zod Schemas ---
+const UserRegistrationSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+  role: z.enum(['USER', 'ADMIN']).optional(),
+});
+
+const UserProfileSchema = z.object({
+  name: z.string().min(1).max(100),
+  image: z.string().optional(), // Allow empty string or null
+});
+
+const NoteBlockSchema = z.object({
+  id: z.string(),
+  type: z.enum(['paragraph', 'heading', 'todo', 'bullet', 'blockquote', 'code']),
+  content: z.string(),
+  checked: z.boolean().optional(),
+});
+
+const NoteSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  blocks: z.array(NoteBlockSchema),
+  position: z.object({ x: z.number(), y: z.number() }),
+  connections: z.array(z.string()),
+  tags: z.array(z.string()).optional(),
+  createdAt: z.number(),
+  color: z.string().optional(),
+});
+
+// --- Helper Functions ---
+
+async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retries <= 0) throw error;
+    await new Promise(resolve => setTimeout(resolve, delay));
+    return withRetry(fn, retries - 1, delay * 2);
+  }
+}
 
 async function ensureTable() {
   try {
@@ -39,9 +85,24 @@ async function ensureTable() {
   }
 }
 
-// ... (rest of file)
+async function fixSchema() {
+  try {
+    await pool.query(`
+            ALTER TABLE notes ADD COLUMN IF NOT EXISTS data JSONB;
+        `);
+  } catch (e) {
+    console.error("Failed to fix schema:", e);
+  }
+}
+
+// --- Actions ---
 
 export async function updateUserProfile(name: string, image: string) {
+  const validation = UserProfileSchema.safeParse({ name, image });
+  if (!validation.success) {
+    return { error: 'Invalid profile data.' };
+  }
+
   try {
     const session = await import('../auth').then(mod => mod.auth());
     if (!session?.user?.email) return { error: 'Not authenticated' };
@@ -79,7 +140,6 @@ export async function signOutAction() {
 }
 
 export async function getNotes(): Promise<Note[]> {
-  // ... (rest of file)
   try {
     const result = await pool.query('SELECT data FROM notes');
     return result.rows
@@ -110,73 +170,81 @@ export async function getNotes(): Promise<Note[]> {
   }
 }
 
-async function fixSchema() {
-  try {
-    await pool.query(`
-            ALTER TABLE notes ADD COLUMN IF NOT EXISTS data JSONB;
-        `);
-  } catch (e) {
-    console.error("Failed to fix schema:", e);
-  }
-}
-
 export async function saveNote(note: Note) {
-  try {
-    await pool.query(
-      `INSERT INTO notes (id, title, data) VALUES ($1, $2, $3) 
-       ON CONFLICT (id) DO UPDATE SET title = $2, data = $3`,
-      [note.id, note.title || '', JSON.stringify(note)]
-    );
-  } catch (e: any) {
-    if (e.code === '42P01') {
-      await ensureTable();
-      // Retry once
-      await pool.query(
-        `INSERT INTO notes (id, title, data) VALUES ($1, $2, $3) 
-             ON CONFLICT (id) DO UPDATE SET title = $2, data = $3`,
-        [note.id, note.title || '', JSON.stringify(note)]
-      );
-    } else if (e.code === '42703') {
-      await fixSchema();
-      // Retry once
-      await pool.query(
-        `INSERT INTO notes (id, title, data) VALUES ($1, $2, $3) 
-             ON CONFLICT (id) DO UPDATE SET title = $2, data = $3`,
-        [note.id, note.title || '', JSON.stringify(note)]
-      );
-    } else {
-      throw e;
-    }
+  // Validate Note Structure
+  const validation = NoteSchema.safeParse(note);
+  if (!validation.success) {
+    console.error("Invalid note data:", validation.error);
+    throw new Error("Invalid note data");
   }
+
+  await withRetry(async () => {
+    try {
+      await pool.query(
+        `INSERT INTO notes (id, title, data) VALUES ($1, $2, $3) 
+         ON CONFLICT (id) DO UPDATE SET title = $2, data = $3`,
+        [note.id, note.title || '', JSON.stringify(note)]
+      );
+    } catch (e: any) {
+      if (e.code === '42P01') {
+        await ensureTable();
+        // Retry once immediately after table creation
+        await pool.query(
+          `INSERT INTO notes (id, title, data) VALUES ($1, $2, $3) 
+               ON CONFLICT (id) DO UPDATE SET title = $2, data = $3`,
+          [note.id, note.title || '', JSON.stringify(note)]
+        );
+      } else if (e.code === '42703') {
+        await fixSchema();
+        // Retry once immediately after schema fix
+        await pool.query(
+          `INSERT INTO notes (id, title, data) VALUES ($1, $2, $3) 
+               ON CONFLICT (id) DO UPDATE SET title = $2, data = $3`,
+          [note.id, note.title || '', JSON.stringify(note)]
+        );
+      } else {
+        throw e;
+      }
+    }
+  });
 }
 
 export async function deleteNoteAction(id: string) {
+  if (!id || typeof id !== 'string') return; // Basic validation
   try {
-    await pool.query('DELETE FROM notes WHERE id = $1', [id]);
+    await withRetry(async () => await pool.query('DELETE FROM notes WHERE id = $1', [id]));
   } catch (e) {
     console.error("Delete Error:", e);
   }
 }
 
 export async function syncNotes(notes: Note[]) {
-  // Utility for bulk updates if needed, though granular is better for performance
+  const validation = z.array(NoteSchema).safeParse(notes);
+  if (!validation.success) {
+    console.error("Invalid notes data for sync");
+    return;
+  }
+
+  // Process in chunks or sequentially to avoid overwhelming the DB, but with retry per note
   for (const note of notes) {
     await saveNote(note);
   }
 }
 
-import bcrypt from 'bcryptjs';
-import { signIn } from '../auth';
-import { AuthError } from 'next-auth';
-
 export async function registerUser(formData: FormData) {
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
-  const role = formData.get('role') as 'USER' | 'ADMIN' || 'USER';
+  const rawData = {
+    email: formData.get('email'),
+    password: formData.get('password'),
+    role: formData.get('role') || 'USER',
+  };
 
-  if (!email || !password) {
-    return { error: 'Email and password are required.' };
+  const validation = UserRegistrationSchema.safeParse(rawData);
+
+  if (!validation.success) {
+    return { error: 'Invalid email or password (min 6 chars).' };
   }
+
+  const { email, password, role } = validation.data;
 
   // Ensure table exists before registering
   await ensureTable();

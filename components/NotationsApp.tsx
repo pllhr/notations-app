@@ -16,6 +16,7 @@ import { generateNoteFromPrompt } from '../services/geminiService';
 import { getNotes, saveNote, deleteNoteAction } from '../app/actions';
 import { User } from '../types';
 import { UserProfile } from './auth/UserProfile';
+import { SieveView } from './sieve/SieveView';
 
 interface NotationsAppProps {
   user?: Partial<User> | null;
@@ -59,10 +60,36 @@ const NotationsApp: React.FC<NotationsAppProps> = ({ user }) => {
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [isAiGenerating, setIsAiGenerating] = useState(false);
 
-  // Load Notes from DB
+  // Load Notes from DB and Local Backup
   useEffect(() => {
     const loadNotes = async () => {
       const fetchedNotes = await getNotes();
+
+      // Local Backup Check
+      const localBackup = localStorage.getItem('notations_backup');
+      if (localBackup) {
+        try {
+          const parsedBackup: Note[] = JSON.parse(localBackup);
+          // Simple conflict resolution: If local has more notes or different data, we could prompt.
+          // For now, we'll merge: if local has notes not in DB (offline created), add them.
+          // If DB is empty but local has data, restore local.
+
+          if (fetchedNotes.length === 0 && parsedBackup.length > 0) {
+            console.log("Restoring from local backup...");
+            setNotes(parsedBackup, 'REPLACE');
+            // Trigger sync to server
+            parsedBackup.forEach(n => saveNote(n));
+            setIsLoading(false);
+            return;
+          }
+
+          // If both have data, we prefer server for now but could implement smarter merge.
+          // A simple "Safety Net" is: if server fails to load, use local.
+        } catch (e) {
+          console.error("Failed to parse local backup", e);
+        }
+      }
+
       setNotes(fetchedNotes, 'REPLACE');
       if (fetchedNotes.length > 0 && !activeNoteId) {
         // Don't auto-select first note to avoid confusion with navigation trap immediately
@@ -72,6 +99,13 @@ const NotationsApp: React.FC<NotationsAppProps> = ({ user }) => {
     };
     loadNotes();
   }, []);
+
+  // Local Backup Effect
+  useEffect(() => {
+    if (notes.length > 0) {
+      localStorage.setItem('notations_backup', JSON.stringify(notes));
+    }
+  }, [notes]);
 
   // Initialize Theme
   useEffect(() => {
@@ -439,6 +473,18 @@ const NotationsApp: React.FC<NotationsAppProps> = ({ user }) => {
                 onDeleteNote={handleRequestDelete}
                 isDarkMode={isDarkMode}
               />
+            </motion.div>
+          )}
+
+          {view === ViewMode.SIEVE && (
+            <motion.div
+              key="sieve"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="h-full w-full"
+            >
+              <SieveView />
             </motion.div>
           )}
         </AnimatePresence>
