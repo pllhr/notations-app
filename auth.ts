@@ -43,13 +43,22 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                 token.role = (user as any).role;
                 token.createdAt = (user as any).created_at;
                 token.name = user.name;
-                token.image = user.image;
+
+                // Prevent large base64 images from bloating the cookie
+                if (user.image && user.image.length < 2000) {
+                    token.image = user.image;
+                } else {
+                    console.warn("User image is too large for session cookie, skipping.");
+                    token.image = null; // Or set a default placeholder if needed
+                }
             }
 
             // Update token if session is updated (e.g. name change)
             if (trigger === "update" && session) {
                 token.name = session.user.name;
-                token.image = session.user.image;
+                if (session.user.image && session.user.image.length < 2000) {
+                    token.image = session.user.image;
+                }
             }
 
             return token;
