@@ -5,12 +5,13 @@ import { Note, NoteBlock } from '../../types';
 import { NOTE_COLORS } from '../../constants';
 import {
   Plus, Trash2, Sparkles,
-  Heading1, Type, List, CheckSquare, Quote, Code,
+  Heading1, Type, List, CheckSquare, Quote, Code, Image as ImageIcon,
   Bold, Italic, Strikethrough, Palette, Hash, X, Copy, Check, Save
 } from 'lucide-react';
 import { expandNoteWithAI } from '../../services/geminiService';
 import { HistoryMode } from '../../hooks/useHistory';
 import { ContentBlock } from './ContentBlock';
+import { ImageBlock } from './ImageBlock';
 
 interface EditorViewProps {
   activeNote: Note | null;
@@ -29,6 +30,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
 }) => {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Slash Menu State
   const [slashMenuOpen, setSlashMenuOpen] = useState(false);
@@ -355,6 +357,75 @@ export const EditorView: React.FC<EditorViewProps> = ({
     setTimeout(() => setCopiedBlockId(null), 2000);
   };
 
+  const handleFileUpload = async (file: File, targetBlockId?: string) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+
+      if (data.url) {
+        const newBlock: NoteBlock = {
+          id: Date.now().toString(),
+          type: 'image',
+          content: data.url
+        };
+
+        let newBlocks = [...activeNote.blocks];
+
+        if (targetBlockId) {
+          // Replace the target block (e.g. the one with the slash command)
+          newBlocks = newBlocks.map(b => b.id === targetBlockId ? newBlock : b);
+        } else if (focusedBlockId) {
+          // Insert after focused block
+          const index = newBlocks.findIndex(b => b.id === focusedBlockId);
+          if (index !== -1) {
+            newBlocks.splice(index + 1, 0, newBlock);
+          } else {
+            newBlocks.push(newBlock);
+          }
+        } else {
+          // Append to end
+          newBlocks.push(newBlock);
+        }
+
+        onUpdateNote({ ...activeNote, blocks: newBlocks }, 'PUSH');
+      }
+    } catch (e) {
+      console.error('Upload failed', e);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    if (e.clipboardData.files.length > 0) {
+      const files = Array.from(e.clipboardData.files).filter(f => f.type.startsWith('image/'));
+      if (files.length > 0) {
+        e.preventDefault();
+        files.forEach(file => handleFileUpload(file, focusedBlockId || undefined));
+      }
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (e.dataTransfer.files.length > 0) {
+      const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+      files.forEach(file => handleFileUpload(file));
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleFileUpload(e.target.files[0], slashBlockId || undefined);
+    }
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   return (
     <motion.div
       ref={editorRef}
@@ -362,7 +433,17 @@ export const EditorView: React.FC<EditorViewProps> = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
       className="max-w-3xl mx-auto pt-12 pb-32 px-8 relative text-foreground"
+      onPaste={handlePaste}
+      onDrop={handleDrop}
+      onDragOver={(e) => e.preventDefault()}
     >
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept="image/*"
+        onChange={handleFileSelect}
+      />
       {/* Header */}
       <div className="flex items-start gap-4 mb-4 relative">
         <motion.div
@@ -540,11 +621,12 @@ export const EditorView: React.FC<EditorViewProps> = ({
                     />
                   )}
 
-                  <ContentBlock
-                    id={block.id}
-                    html={block.content}
-                    tagName={block.type === 'heading' ? 'h1' : 'div'}
-                    className={`w-full outline-none resize-none overflow-hidden text-black dark:text-white
+                  {block.type !== 'image' && (
+                    <ContentBlock
+                      id={block.id}
+                      html={block.content}
+                      tagName={block.type === 'heading' ? 'h1' : 'div'}
+                      className={`w-full outline-none resize-none overflow-hidden text-black dark:text-white
                             ${block.type === 'heading' ? 'text-3xl font-bold mb-4 mt-6' : ''}
                             ${block.type === 'paragraph' ? 'text-lg leading-relaxed mb-2' : ''}
                             ${block.type === 'todo' ? (block.checked ? 'text-lg line-through text-gray-400 dark:text-neutral-600' : 'text-lg') : ''}
@@ -552,12 +634,21 @@ export const EditorView: React.FC<EditorViewProps> = ({
                             ${block.type === 'blockquote' ? 'text-xl italic border-l-4 border-black dark:border-white pl-4 py-2 text-gray-600 dark:text-neutral-400 my-4' : ''}
                             ${block.type === 'code' ? 'font-mono text-sm bg-gray-50 dark:bg-neutral-900 p-4 rounded-md text-gray-800 dark:text-neutral-200 my-2 whitespace-pre-wrap' : ''}
                         `}
-                    placeholder={block.type === 'paragraph' ? "Type '/' for commands" : "Type something..."}
-                    onChange={updateBlockContent}
-                    onKeyDown={handleBlockKeyDown}
-                    autoFocus={focusedBlockId === block.id}
-                    onFocus={setFocusedBlockId}
-                  />
+                      placeholder={block.type === 'paragraph' ? "Type '/' for commands" : "Type something..."}
+                      onChange={updateBlockContent}
+                      onKeyDown={handleBlockKeyDown}
+                      autoFocus={focusedBlockId === block.id}
+                      onFocus={setFocusedBlockId}
+                    />
+                  )}
+                  {block.type === 'image' && (
+                    <ImageBlock
+                      id={block.id}
+                      src={block.content}
+                      onDelete={deleteBlock}
+                      className="w-full"
+                    />
+                  )}
                 </div>
 
                 {/* Copy Button for Code Blocks */}
@@ -611,12 +702,18 @@ export const EditorView: React.FC<EditorViewProps> = ({
               { type: 'todo', label: 'To-do List', icon: CheckSquare },
               { type: 'blockquote', label: 'Quote', icon: Quote },
               { type: 'code', label: 'Code Block', icon: Code },
+              { type: 'image', label: 'Image', icon: ImageIcon },
             ].filter(item => item.label.toLowerCase().includes(slashFilter.toLowerCase())).map(item => (
               <button
                 key={item.type}
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (slashBlockId) updateBlockType(slashBlockId, item.type as any);
+                  if (item.type === 'image') {
+                    fileInputRef.current?.click();
+                    setSlashMenuOpen(false);
+                  } else if (slashBlockId) {
+                    updateBlockType(slashBlockId, item.type as any);
+                  }
                 }}
                 className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 dark:hover:bg-neutral-800 transition-colors text-left"
               >

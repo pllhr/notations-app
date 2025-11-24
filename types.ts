@@ -2,7 +2,8 @@
 export enum ViewMode {
   EDITOR = 'EDITOR',
   CANVAS = 'CANVAS',
-  GRAPH = 'GRAPH'
+  GRAPH = 'GRAPH',
+  SIEVE = 'SIEVE'
 }
 
 export interface Point {
@@ -12,7 +13,7 @@ export interface Point {
 
 export interface NoteBlock {
   id: string;
-  type: 'paragraph' | 'heading' | 'todo' | 'bullet' | 'blockquote' | 'code';
+  type: 'paragraph' | 'heading' | 'todo' | 'bullet' | 'blockquote' | 'code' | 'image';
   content: string;
   checked?: boolean;
 }

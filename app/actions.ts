@@ -21,7 +21,7 @@ const UserProfileSchema = z.object({
 
 const NoteBlockSchema = z.object({
   id: z.string(),
-  type: z.enum(['paragraph', 'heading', 'todo', 'bullet', 'blockquote', 'code']),
+  type: z.enum(['paragraph', 'heading', 'todo', 'bullet', 'blockquote', 'code', 'image']),
   content: z.string(),
   checked: z.boolean().optional(),
 });

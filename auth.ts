@@ -2,19 +2,8 @@ import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
-import pool from './lib/db';
-import { User } from './types';
 import { authConfig } from './auth.config';
-
-async function getUser(email: string): Promise<User & { password_hash: string } | null> {
-    try {
-        const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-        return result.rows[0] || null;
-    } catch (error) {
-        console.error('Failed to fetch user:', error);
-        throw new Error('Failed to fetch user.');
-    }
-}
+import { getUserByEmail } from './lib/data';
 
 export const { auth, signIn, signOut, handlers } = NextAuth({
     ...authConfig,
@@ -33,9 +22,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
             if (token.name && session.user) {
                 session.user.name = token.name;
             }
-            if (token.image && session.user) {
-                session.user.image = token.image as string;
-            }
+            // Image is NOT stored in session anymore to prevent header overflow
             return session;
         },
         async jwt({ token, user, trigger, session }) {
@@ -43,22 +30,12 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                 token.role = (user as any).role;
                 token.createdAt = (user as any).created_at;
                 token.name = user.name;
-
-                // Prevent large base64 images from bloating the cookie
-                if (user.image && user.image.length < 2000) {
-                    token.image = user.image;
-                } else {
-                    console.warn("User image is too large for session cookie, skipping.");
-                    token.image = null; // Or set a default placeholder if needed
-                }
+                // token.image is intentionally omitted
             }
 
             // Update token if session is updated (e.g. name change)
             if (trigger === "update" && session) {
                 token.name = session.user.name;
-                if (session.user.image && session.user.image.length < 2000) {
-                    token.image = session.user.image;
-                }
             }
 
             return token;
@@ -73,7 +50,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
 
                 if (parsedCredentials.success) {
                     const { email, password } = parsedCredentials.data;
-                    const user = await getUser(email);
+                    const user = await getUserByEmail(email);
                     if (!user) return null;
 
                     const passwordsMatch = await bcrypt.compare(password, user.password_hash);
