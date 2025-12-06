@@ -60,6 +60,21 @@
       "exportedName": "deleteNoteAction",
       "filename": "app/actions.ts"
     },
+    "00a27361b0caf8eef52e679cc4febeb0dfd20c4e0e": {
+      "workers": {
+        "app/page": {
+          "moduleId": "[project]/.next-internal/server/app/page/actions.js { ACTIONS_MODULE0 => \"[project]/services/geminiService.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "getTags",
+          "filename": "app/actions.ts"
+        }
+      },
+      "layer": {
+        "app/page": "action-browser"
+      },
+      "exportedName": "getTags",
+      "filename": "app/actions.ts"
+    },
     "7f169ad6c7a40bd017e3de934f47d4b743d203f5be": {
       "workers": {
         "app/page": {

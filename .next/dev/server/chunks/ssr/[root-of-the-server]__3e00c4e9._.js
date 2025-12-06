@@ -368,13 +368,19 @@ const { auth, signIn, signOut, handlers } = (0, __TURBOPACK__imported__module__$
 "[project]/app/actions.ts [app-rsc] (ecmascript)", ((__turbopack_context__) => {
 "use strict";
 
-/* __next_internal_action_entry_do_not_use__ [{"006e4d292e2cbdbf295400e16cc531e51233b7a991":"signOutAction","00a069e8f1f4f1494200b20c0bc84072e394479fe9":"getNotes","401cd273f71d2e0f903f4f9a93d8fe00cb48938531":"saveNote","404a74e22b5abf525b0b3284acc53bad418d3e5a87":"deleteNoteAction","4085847e39e2753d5fb39bb672a3e09dfb0af6ab97":"syncNotes","4096e6d625be476a95ef4a4ccfccb665ab488c4578":"registerUser","6001f311435a739c25682d5782f498ba891734c6d3":"updateUserProfile","6090501925620fd29c207a1b20c4264c38d5733a74":"authenticate"},"",""] */ __turbopack_context__.s([
+/* __next_internal_action_entry_do_not_use__ [{"006e4d292e2cbdbf295400e16cc531e51233b7a991":"signOutAction","00a069e8f1f4f1494200b20c0bc84072e394479fe9":"getNotes","00a27361b0caf8eef52e679cc4febeb0dfd20c4e0e":"getTags","401cd273f71d2e0f903f4f9a93d8fe00cb48938531":"saveNote","404a74e22b5abf525b0b3284acc53bad418d3e5a87":"deleteNoteAction","4085847e39e2753d5fb39bb672a3e09dfb0af6ab97":"syncNotes","4096e6d625be476a95ef4a4ccfccb665ab488c4578":"registerUser","6001f311435a739c25682d5782f498ba891734c6d3":"updateUserProfile","6041cd847ee719e7a0e25a948ee66183b2ceb07cb1":"createTag","6090501925620fd29c207a1b20c4264c38d5733a74":"authenticate","609dd24123ceaaf7918c2df81e340c49a02c357c50":"deleteTag","7091c2d1bc383dc801598a0e074a6e2170cb10531b":"updateTag"},"",""] */ __turbopack_context__.s([
     "authenticate",
     ()=>authenticate,
+    "createTag",
+    ()=>createTag,
     "deleteNoteAction",
     ()=>deleteNoteAction,
+    "deleteTag",
+    ()=>deleteTag,
     "getNotes",
     ()=>getNotes,
+    "getTags",
+    ()=>getTags,
     "registerUser",
     ()=>registerUser,
     "saveNote",
@@ -383,6 +389,8 @@ const { auth, signIn, signOut, handlers } = (0, __TURBOPACK__imported__module__$
     ()=>signOutAction,
     "syncNotes",
     ()=>syncNotes,
+    "updateTag",
+    ()=>updateTag,
     "updateUserProfile",
     ()=>updateUserProfile
 ]);
@@ -421,7 +429,8 @@ const NoteBlockSchema = __TURBOPACK__imported__module__$5b$project$5d2f$node_mod
         'todo',
         'bullet',
         'blockquote',
-        'code'
+        'code',
+        'image'
     ]),
     content: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string(),
     checked: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].boolean().optional()
@@ -468,6 +477,15 @@ async function ensureTable() {
         created_at BIGINT NOT NULL,
         name TEXT,
         image TEXT
+      );
+    `);
+        // Create Tags Table for global tag management
+        await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"].query(`
+      CREATE TABLE IF NOT EXISTS tags (
+        id TEXT PRIMARY KEY,
+        name TEXT UNIQUE NOT NULL,
+        color TEXT NOT NULL DEFAULT '#3b82f6',
+        created_at BIGINT NOT NULL
       );
     `);
         // Add columns if they don't exist (migration)
@@ -693,6 +711,138 @@ async function authenticate(prevState, formData) {
         throw error;
     }
 }
+const TagSchema = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].object({
+    id: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string(),
+    name: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().min(1).max(50),
+    color: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().regex(/^#[0-9a-fA-F]{6}$/),
+    createdAt: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].number()
+});
+async function getTags() {
+    try {
+        await ensureTable();
+        const result = await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"].query('SELECT id, name, color, created_at FROM tags ORDER BY name');
+        return result.rows.map((row)=>({
+                id: row.id,
+                name: row.name,
+                color: row.color,
+                createdAt: Number(row.created_at)
+            }));
+    } catch (e) {
+        if (e.code === '42P01') {
+            await ensureTable();
+            return [];
+        }
+        console.error("Failed to get tags:", e);
+        return [];
+    }
+}
+async function createTag(name, color) {
+    const id = crypto.randomUUID();
+    const createdAt = Date.now();
+    const validation = TagSchema.safeParse({
+        id,
+        name: name.trim().toLowerCase(),
+        color,
+        createdAt
+    });
+    if (!validation.success) {
+        return {
+            error: 'Invalid tag data'
+        };
+    }
+    try {
+        await ensureTable();
+        await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"].query('INSERT INTO tags (id, name, color, created_at) VALUES ($1, $2, $3, $4)', [
+            id,
+            name.trim().toLowerCase(),
+            color,
+            createdAt
+        ]);
+        return {
+            success: true,
+            tag: {
+                id,
+                name: name.trim().toLowerCase(),
+                color,
+                createdAt
+            }
+        };
+    } catch (e) {
+        if (e.code === '23505') {
+            return {
+                error: 'Tag already exists'
+            };
+        }
+        console.error("Failed to create tag:", e);
+        return {
+            error: 'Failed to create tag'
+        };
+    }
+}
+async function updateTag(id, name, color) {
+    if (!id || !name.trim()) {
+        return {
+            error: 'Invalid tag data'
+        };
+    }
+    try {
+        await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"].query('UPDATE tags SET name = $1, color = $2 WHERE id = $3', [
+            name.trim().toLowerCase(),
+            color,
+            id
+        ]);
+        return {
+            success: true
+        };
+    } catch (e) {
+        if (e.code === '23505') {
+            return {
+                error: 'Tag name already exists'
+            };
+        }
+        console.error("Failed to update tag:", e);
+        return {
+            error: 'Failed to update tag'
+        };
+    }
+}
+async function deleteTag(id, tagName) {
+    if (!id) {
+        return {
+            error: 'Invalid tag ID'
+        };
+    }
+    try {
+        // Delete the tag from the tags table
+        await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"].query('DELETE FROM tags WHERE id = $1', [
+            id
+        ]);
+        // Remove this tag from all notes that use it
+        const notesResult = await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"].query('SELECT id, data FROM notes');
+        for (const row of notesResult.rows){
+            const note = row.data;
+            if (note.tags && note.tags.includes(tagName)) {
+                const updatedTags = note.tags.filter((t)=>t !== tagName);
+                const updatedNote = {
+                    ...note,
+                    tags: updatedTags
+                };
+                await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"].query('UPDATE notes SET data = $1 WHERE id = $2', [
+                    JSON.stringify(updatedNote),
+                    note.id
+                ]);
+            }
+        }
+        return {
+            success: true
+        };
+    } catch (e) {
+        console.error("Failed to delete tag:", e);
+        return {
+            error: 'Failed to delete tag'
+        };
+    }
+}
 ;
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$action$2d$validate$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["ensureServerEntryExports"])([
     updateUserProfile,
@@ -702,7 +852,11 @@ async function authenticate(prevState, formData) {
     deleteNoteAction,
     syncNotes,
     registerUser,
-    authenticate
+    authenticate,
+    getTags,
+    createTag,
+    updateTag,
+    deleteTag
 ]);
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(updateUserProfile, "6001f311435a739c25682d5782f498ba891734c6d3", null);
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(signOutAction, "006e4d292e2cbdbf295400e16cc531e51233b7a991", null);
@@ -712,6 +866,10 @@ async function authenticate(prevState, formData) {
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(syncNotes, "4085847e39e2753d5fb39bb672a3e09dfb0af6ab97", null);
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(registerUser, "4096e6d625be476a95ef4a4ccfccb665ab488c4578", null);
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(authenticate, "6090501925620fd29c207a1b20c4264c38d5733a74", null);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(getTags, "00a27361b0caf8eef52e679cc4febeb0dfd20c4e0e", null);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(createTag, "6041cd847ee719e7a0e25a948ee66183b2ceb07cb1", null);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(updateTag, "7091c2d1bc383dc801598a0e074a6e2170cb10531b", null);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(deleteTag, "609dd24123ceaaf7918c2df81e340c49a02c357c50", null);
 }),
 "[project]/.next-internal/server/app/page/actions.js { ACTIONS_MODULE0 => \"[project]/services/geminiService.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript) <locals>", ((__turbopack_context__) => {
 "use strict";
@@ -719,6 +877,7 @@ async function authenticate(prevState, formData) {
 __turbopack_context__.s([]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$services$2f$geminiService$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/services/geminiService.ts [app-rsc] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/app/actions.ts [app-rsc] (ecmascript)");
+;
 ;
 ;
 ;
@@ -735,6 +894,8 @@ __turbopack_context__.s([
     ()=>__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["signOutAction"],
     "00a069e8f1f4f1494200b20c0bc84072e394479fe9",
     ()=>__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getNotes"],
+    "00a27361b0caf8eef52e679cc4febeb0dfd20c4e0e",
+    ()=>__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getTags"],
     "401cd273f71d2e0f903f4f9a93d8fe00cb48938531",
     ()=>__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["saveNote"],
     "404a74e22b5abf525b0b3284acc53bad418d3e5a87",

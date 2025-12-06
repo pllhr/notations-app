@@ -72,6 +72,16 @@ async function ensureTable() {
       );
     `);
 
+    // Create Tags Table for global tag management
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS tags (
+        id TEXT PRIMARY KEY,
+        name TEXT UNIQUE NOT NULL,
+        color TEXT NOT NULL DEFAULT '#3b82f6',
+        created_at BIGINT NOT NULL
+      );
+    `);
+
     // Add columns if they don't exist (migration)
     try {
       await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS name TEXT;`);
@@ -283,5 +293,111 @@ export async function authenticate(prevState: string | undefined, formData: Form
       }
     }
     throw error;
+  }
+}
+
+// --- Tag Management Actions ---
+
+import { Tag } from '../types';
+
+const TagSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1).max(50),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  createdAt: z.number(),
+});
+
+export async function getTags(): Promise<Tag[]> {
+  try {
+    await ensureTable();
+    const result = await pool.query('SELECT id, name, color, created_at FROM tags ORDER BY name');
+    return result.rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      color: row.color,
+      createdAt: Number(row.created_at),
+    }));
+  } catch (e: any) {
+    if (e.code === '42P01') {
+      await ensureTable();
+      return [];
+    }
+    console.error("Failed to get tags:", e);
+    return [];
+  }
+}
+
+export async function createTag(name: string, color: string): Promise<{ success?: boolean; error?: string; tag?: Tag }> {
+  const id = crypto.randomUUID();
+  const createdAt = Date.now();
+
+  const validation = TagSchema.safeParse({ id, name: name.trim().toLowerCase(), color, createdAt });
+  if (!validation.success) {
+    return { error: 'Invalid tag data' };
+  }
+
+  try {
+    await ensureTable();
+    await pool.query(
+      'INSERT INTO tags (id, name, color, created_at) VALUES ($1, $2, $3, $4)',
+      [id, name.trim().toLowerCase(), color, createdAt]
+    );
+    return { success: true, tag: { id, name: name.trim().toLowerCase(), color, createdAt } };
+  } catch (e: any) {
+    if (e.code === '23505') {
+      return { error: 'Tag already exists' };
+    }
+    console.error("Failed to create tag:", e);
+    return { error: 'Failed to create tag' };
+  }
+}
+
+export async function updateTag(id: string, name: string, color: string): Promise<{ success?: boolean; error?: string }> {
+  if (!id || !name.trim()) {
+    return { error: 'Invalid tag data' };
+  }
+
+  try {
+    await pool.query(
+      'UPDATE tags SET name = $1, color = $2 WHERE id = $3',
+      [name.trim().toLowerCase(), color, id]
+    );
+    return { success: true };
+  } catch (e: any) {
+    if (e.code === '23505') {
+      return { error: 'Tag name already exists' };
+    }
+    console.error("Failed to update tag:", e);
+    return { error: 'Failed to update tag' };
+  }
+}
+
+export async function deleteTag(id: string, tagName: string): Promise<{ success?: boolean; error?: string }> {
+  if (!id) {
+    return { error: 'Invalid tag ID' };
+  }
+
+  try {
+    // Delete the tag from the tags table
+    await pool.query('DELETE FROM tags WHERE id = $1', [id]);
+
+    // Remove this tag from all notes that use it
+    const notesResult = await pool.query('SELECT id, data FROM notes');
+    for (const row of notesResult.rows) {
+      const note = row.data as Note;
+      if (note.tags && note.tags.includes(tagName)) {
+        const updatedTags = note.tags.filter(t => t !== tagName);
+        const updatedNote = { ...note, tags: updatedTags };
+        await pool.query(
+          'UPDATE notes SET data = $1 WHERE id = $2',
+          [JSON.stringify(updatedNote), note.id]
+        );
+      }
+    }
+
+    return { success: true };
+  } catch (e) {
+    console.error("Failed to delete tag:", e);
+    return { error: 'Failed to delete tag' };
   }
 }

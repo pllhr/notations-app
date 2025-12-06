@@ -3,7 +3,16 @@ export enum ViewMode {
   EDITOR = 'EDITOR',
   CANVAS = 'CANVAS',
   GRAPH = 'GRAPH',
-  SIEVE = 'SIEVE'
+  SIEVE = 'SIEVE',
+  ADMIN = 'ADMIN'
+}
+
+// Global Tag for management
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: number;
 }
 
 export interface Point {
@@ -16,6 +25,7 @@ export interface NoteBlock {
   type: 'paragraph' | 'heading' | 'todo' | 'bullet' | 'blockquote' | 'code' | 'image';
   content: string;
   checked?: boolean;
+  highlightColor?: string; // Optional background/highlight color for the block
 }
 
 export interface Note {

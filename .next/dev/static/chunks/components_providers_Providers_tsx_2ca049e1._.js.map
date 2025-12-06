@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///D:/ANALISE%20DE%20DADOS/notations/components/providers/Providers.tsx"],"sourcesContent":["'use client';\r\n\r\nimport { SessionProvider } from 'next-auth/react';\r\n\r\nexport function Providers({ children }: { children: React.ReactNode }) {\r\n    return (\r\n        <SessionProvider>\r\n            {children}\r\n        </SessionProvider>\r\n    );\r\n}\r\n"],"names":[],"mappings":";;;;;AAEA;AAFA;;;AAIO,SAAS,UAAU,EAAE,QAAQ,EAAiC;IACjE,qBACI,6LAAC,2JAAe;kBACX;;;;;;AAGb;KANgB"}}]
+}

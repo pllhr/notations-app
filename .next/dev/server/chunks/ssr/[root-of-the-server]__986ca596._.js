@@ -217,7 +217,8 @@ const NoteBlockSchema = __TURBOPACK__imported__module__$5b$project$5d2f$node_mod
         'todo',
         'bullet',
         'blockquote',
-        'code'
+        'code',
+        'image'
     ]),
     content: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string(),
     checked: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].boolean().optional()
@@ -236,6 +237,15 @@ const NoteSchema = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$
     color: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().optional()
 });
 // --- Helper Functions ---
+async function withRetry(fn, retries = 3, delay = 1000) {
+    try {
+        return await fn();
+    } catch (error) {
+        if (retries <= 0) throw error;
+        await new Promise((resolve)=>setTimeout(resolve, delay));
+        return withRetry(fn, retries - 1, delay * 2);
+    }
+}
 async function ensureTable() {
     try {
         await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"].query(`
@@ -368,43 +378,45 @@ async function saveNote(note) {
         console.error("Invalid note data:", validation.error);
         throw new Error("Invalid note data");
     }
-    try {
-        await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"].query(`INSERT INTO notes (id, title, data) VALUES ($1, $2, $3) 
-       ON CONFLICT (id) DO UPDATE SET title = $2, data = $3`, [
-            note.id,
-            note.title || '',
-            JSON.stringify(note)
-        ]);
-    } catch (e) {
-        if (e.code === '42P01') {
-            await ensureTable();
-            // Retry once
+    await withRetry(async ()=>{
+        try {
             await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"].query(`INSERT INTO notes (id, title, data) VALUES ($1, $2, $3) 
-             ON CONFLICT (id) DO UPDATE SET title = $2, data = $3`, [
+         ON CONFLICT (id) DO UPDATE SET title = $2, data = $3`, [
                 note.id,
                 note.title || '',
                 JSON.stringify(note)
             ]);
-        } else if (e.code === '42703') {
-            await fixSchema();
-            // Retry once
-            await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"].query(`INSERT INTO notes (id, title, data) VALUES ($1, $2, $3) 
-             ON CONFLICT (id) DO UPDATE SET title = $2, data = $3`, [
-                note.id,
-                note.title || '',
-                JSON.stringify(note)
-            ]);
-        } else {
-            throw e;
+        } catch (e) {
+            if (e.code === '42P01') {
+                await ensureTable();
+                // Retry once immediately after table creation
+                await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"].query(`INSERT INTO notes (id, title, data) VALUES ($1, $2, $3) 
+               ON CONFLICT (id) DO UPDATE SET title = $2, data = $3`, [
+                    note.id,
+                    note.title || '',
+                    JSON.stringify(note)
+                ]);
+            } else if (e.code === '42703') {
+                await fixSchema();
+                // Retry once immediately after schema fix
+                await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"].query(`INSERT INTO notes (id, title, data) VALUES ($1, $2, $3) 
+               ON CONFLICT (id) DO UPDATE SET title = $2, data = $3`, [
+                    note.id,
+                    note.title || '',
+                    JSON.stringify(note)
+                ]);
+            } else {
+                throw e;
+            }
         }
-    }
+    });
 }
 async function deleteNoteAction(id) {
     if (!id || typeof id !== 'string') return; // Basic validation
     try {
-        await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"].query('DELETE FROM notes WHERE id = $1', [
-            id
-        ]);
+        await withRetry(async ()=>await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$db$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"].query('DELETE FROM notes WHERE id = $1', [
+                id
+            ]));
     } catch (e) {
         console.error("Delete Error:", e);
     }
@@ -415,6 +427,7 @@ async function syncNotes(notes) {
         console.error("Invalid notes data for sync");
         return;
     }
+    // Process in chunks or sequentially to avoid overwhelming the DB, but with retry per note
     for (const note of notes){
         await saveNote(note);
     }

@@ -4,7 +4,7 @@
 
 @theme {
   --font-sans: "Inter", sans-serif;
-  
+
   --color-foreground: var(--foreground);
   --color-background: var(--background);
   --color-muted: var(--muted);
@@ -14,15 +14,31 @@
   --animate-shimmer: shimmer 2s linear infinite;
 
   @keyframes blob {
-    0% { transform: translate(0px, 0px) scale(1); }
-    33% { transform: translate(30px, -50px) scale(1.1); }
-    66% { transform: translate(-20px, 20px) scale(0.9); }
-    100% { transform: translate(0px, 0px) scale(1); }
+    0% {
+      transform: translate(0px, 0px) scale(1);
+    }
+
+    33% {
+      transform: translate(30px, -50px) scale(1.1);
+    }
+
+    66% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+
+    100% {
+      transform: translate(0px, 0px) scale(1);
+    }
   }
 
   @keyframes shimmer {
-    from { transform: translateX(-100%); }
-    to { transform: translateX(100%); }
+    from {
+      transform: translateX(-100%);
+    }
+
+    to {
+      transform: translateX(100%);
+    }
   }
 }
 
@@ -35,8 +51,10 @@
 
 .dark {
   --foreground: #ededed;
-  --background: #0a0a0a; /* Neutral 950 */
-  --muted: #262626; /* Neutral 800 */
+  --background: #0a0a0a;
+  /* Neutral 950 */
+  --muted: #262626;
+  /* Neutral 800 */
   --muted-foreground: #a3a3a3;
 }
 
@@ -55,21 +73,284 @@ body {
 
 /* Utilities */
 .custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
+  width: 4px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
+  background: transparent;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #e5e5e5;
-    border-radius: 4px;
+  background: #e5e5e5;
+  border-radius: 4px;
 }
+
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #404040;
+  background: #404040;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #000;
+  background: #000;
 }
+
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #737373;
+  background: #737373;
+}
+
+/* Link Styling for Content Blocks */
+[contenteditable] a,
+.content-block a {
+  color: #3b82f6;
+  text-decoration: none;
+  position: relative;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid transparent;
+  font-weight: 500;
+}
+
+[contenteditable] a:hover,
+.content-block a:hover {
+  color: #60a5fa;
+  border-bottom-color: #60a5fa;
+}
+
+/* Link with animated underline */
+[contenteditable] a::after,
+.content-block a::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  transition: width 0.3s ease;
+  border-radius: 1px;
+}
+
+[contenteditable] a:hover::after,
+.content-block a:hover::after {
+  width: 100%;
+}
+
+/* Dark mode link colors */
+.dark [contenteditable] a,
+.dark .content-block a {
+  color: #60a5fa;
+}
+
+.dark [contenteditable] a:hover,
+.dark .content-block a:hover {
+  color: #93c5fd;
+  border-bottom-color: #93c5fd;
+}
+
+.dark [contenteditable] a::after,
+.dark .content-block a::after {
+  background: linear-gradient(90deg, #60a5fa, #a78bfa);
+}
+
+/* Link External Indicator */
+[contenteditable] a[href^="http"]::before,
+.content-block a[href^="http"]::before {
+  content: '↗';
+  font-size: 0.7em;
+  margin-right: 2px;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  display: inline-block;
+  transform: translateX(-4px);
+}
+
+[contenteditable] a[href^="http"]:hover::before,
+.content-block a[href^="http"]:hover::before {
+  opacity: 0.7;
+  transform: translateX(0);
+}
+
+/* Visited link styling */
+[contenteditable] a:visited,
+.content-block a:visited {
+  color: #8b5cf6;
+}
+
+.dark [contenteditable] a:visited,
+.dark .content-block a:visited {
+  color: #a78bfa;
+}
+
+/* Mention Link Style */
+.mention-link {
+  color: #3b82f6 !important;
+  background: rgba(59, 130, 246, 0.15);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-decoration: none !important;
+  border-bottom: none !important;
+  transition: all 0.2s ease;
+}
+
+.mention-link:hover {
+  background: rgba(59, 130, 246, 0.25);
+  color: #60a5fa !important;
+}
+
+.mention-link::after {
+  display: none !important;
+}
+
+.dark .mention-link {
+  background: rgba(96, 165, 250, 0.2);
+}
+
+/* Bookmark Link Style */
+.bookmark-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #f59e0b !important;
+  background: rgba(245, 158, 11, 0.1);
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-weight: 500;
+  text-decoration: none !important;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  transition: all 0.2s ease;
+}
+
+.bookmark-link:hover {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+.bookmark-link::after {
+  display: none !important;
+}
+
+/* Embed Placeholder Style */
+.embed-placeholder {
+  display: block;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1));
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 8px 0;
+  color: #a78bfa;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.embed-placeholder:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(59, 130, 246, 0.15));
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+/* Universal Platform Link Styles */
+.twitter-mention-link,
+.youtube-link,
+.instagram-link,
+.github-link,
+.linkedin-link,
+.tiktok-link,
+.spotify-link,
+.reddit-link,
+.generic-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #e5e7eb !important;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-weight: 400;
+  text-decoration: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  transition: all 0.2s ease;
+  cursor: pointer !important;
+  font-size: 14px;
+}
+
+.twitter-mention-link:hover,
+.youtube-link:hover,
+.instagram-link:hover,
+.github-link:hover,
+.linkedin-link:hover,
+.tiktok-link:hover,
+.spotify-link:hover,
+.reddit-link:hover,
+.generic-link:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff !important;
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.twitter-mention-link::after,
+.youtube-link::after,
+.instagram-link::after,
+.github-link::after,
+.linkedin-link::after,
+.tiktok-link::after,
+.spotify-link::after,
+.reddit-link::after,
+.generic-link::after {
+  display: none !important;
+}
+
+/* Link Logo - SVG Icons */
+.link-logo {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.link-logo svg {
+  display: block;
+}
+
+/* Link Text Container */
+.link-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Link Separator */
+.link-separator {
+  color: rgba(255, 255, 255, 0.3);
+  font-weight: 300;
+}
+
+/* Link Platform */
+.link-platform {
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 400;
+  font-size: 13px;
+}
+
+/* Bold name */
+.twitter-mention-link strong,
+.youtube-link strong,
+.instagram-link strong,
+.github-link strong,
+.linkedin-link strong,
+.tiktok-link strong,
+.spotify-link strong,
+.reddit-link strong,
+.generic-link strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Bookmark Style */
+.bookmark-style {
+  border-left: 3px solid #f59e0b !important;
+  padding-left: 12px;
+  background: rgba(245, 158, 11, 0.08) !important;
+}
+
+.bookmark-style:hover {
+  background: rgba(245, 158, 11, 0.15) !important;
 }

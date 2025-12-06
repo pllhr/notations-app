@@ -13,7 +13,7 @@ interface ContentBlockProps {
   onFocus?: (id: string) => void;
 }
 
-export const ContentBlock: React.FC<ContentBlockProps> = ({
+export const ContentBlock = React.memo<ContentBlockProps>(({
   id,
   html,
   tagName,
@@ -66,7 +66,57 @@ export const ContentBlock: React.FC<ContentBlockProps> = ({
   }, [autoFocus]);
 
   const handleInput = (e: React.FormEvent<HTMLElement>) => {
-    const newHtml = e.currentTarget.innerHTML;
+    let newHtml = e.currentTarget.innerHTML;
+
+    // Clean up empty or broken anchor tags
+    // Remove anchor tags with empty or whitespace-only content
+    newHtml = newHtml.replace(/<a[^>]*>(\s*)<\/a>/gi, '$1');
+    // Remove anchor tags with only formatting tags but no text
+    newHtml = newHtml.replace(/<a[^>]*>(<(strong|em|span|b|i)[^>]*>\s*<\/\2>)*<\/a>/gi, '');
+
+    // Platform links should be ATOMIC - any modification removes the entire link
+    // These are platform links that should be deleted entirely if edited at all
+    const platformLinkClasses = ['twitter-mention-link', 'youtube-link', 'instagram-link', 'github-link', 'linkedin-link', 'tiktok-link', 'spotify-link', 'reddit-link', 'generic-link'];
+
+    // Create a temporary element to parse and clean the HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = newHtml;
+
+    // Find all anchor tags and check if they're platform links that have been modified
+    const anchors = tempDiv.querySelectorAll('a');
+    anchors.forEach(anchor => {
+      const classList = anchor.className;
+      const isPlatformLink = platformLinkClasses.some(cls => classList.includes(cls));
+
+      if (isPlatformLink) {
+        // Check if the link structure is intact - platform links must have:
+        // 1. A .link-logo span with an SVG inside
+        // 2. A .link-text span 
+        // 3. A strong tag inside .link-text
+        // 4. A .link-separator span (the · character)
+        // 5. A .link-platform span
+        const hasLinkLogo = anchor.querySelector('.link-logo') !== null;
+        const hasLinkText = anchor.querySelector('.link-text') !== null;
+        const hasStrong = anchor.querySelector('.link-text strong') !== null;
+        const hasSeparator = anchor.querySelector('.link-separator') !== null;
+        const hasPlatform = anchor.querySelector('.link-platform') !== null;
+        const hasSvg = anchor.querySelector('svg') !== null;
+
+        // If ANY required component is missing, the link was edited - delete it entirely
+        const isIntact = hasLinkLogo && hasLinkText && hasStrong && hasSeparator && hasPlatform && hasSvg;
+
+        if (!isIntact) {
+          // Remove the entire anchor - don't leave any text behind
+          anchor.remove();
+        }
+      }
+    });
+
+    newHtml = tempDiv.innerHTML;
+
+    // Remove twitter preview cards that are orphaned (outside of anchor)
+    newHtml = newHtml.replace(/<div class="twitter-preview-card"[^>]*>[\s\S]*?<\/div>\s*<\/div>\s*<\/div>\s*<\/div>/gi, '');
+
     // Update local tracker immediately so next render knows it matches
     lastHtmlRef.current = newHtml;
     onChange(id, newHtml);
@@ -82,6 +132,17 @@ export const ContentBlock: React.FC<ContentBlockProps> = ({
     onKeyDown(e, id);
   };
 
+  // Handle clicks on links inside contentEditable
+  const handleClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const anchor = target.closest('a');
+    if (anchor && anchor.href) {
+      e.preventDefault();
+      e.stopPropagation();
+      window.open(anchor.href, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const Tag = tagName as React.ElementType;
 
   return (
@@ -92,9 +153,12 @@ export const ContentBlock: React.FC<ContentBlockProps> = ({
       suppressContentEditableWarning={true}
       onInput={handleInput}
       onKeyDown={handleKeyDown}
+      onClick={handleClick}
       onFocus={() => onFocus?.(id)}
       data-placeholder={placeholder}
       dangerouslySetInnerHTML={innerHTML}
     />
   );
-};
+});
+
+ContentBlock.displayName = 'ContentBlock';

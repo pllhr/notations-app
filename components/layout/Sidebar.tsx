@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { ViewMode } from '../../types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Type, Grid, Share2, PlusCircle, Search, Undo2, Redo2, Sparkles, Hash, X, Moon, Sun, Box } from 'lucide-react';
+import { Type, Grid, Share2, PlusCircle, Search, Undo2, Redo2, Sparkles, Hash, X, Moon, Sun, Box, Settings } from 'lucide-react';
+import Link from 'next/link';
 
 interface SidebarProps {
   currentView: ViewMode;
@@ -173,6 +174,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </AnimatePresence>
         </div>
+
+        {/* Admin/Tag Management Link */}
+        <Link href="/admin">
+          <motion.div
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="w-10 h-10 flex items-center justify-center rounded-lg text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-50 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+            title="Tag Management (Admin)"
+          >
+            <Settings size={20} />
+          </motion.div>
+        </Link>
 
         <motion.button
           whileHover={{ scale: 1.1 }}

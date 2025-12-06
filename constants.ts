@@ -13,6 +13,19 @@ export const NOTE_COLORS = [
   { id: 'purple', value: '#a855f7', label: 'Purple' },
 ];
 
+// Highlight colors for individual content blocks (vibrant, readable versions)
+export const BLOCK_HIGHLIGHT_COLORS = [
+  { id: 'none', value: 'transparent', label: 'No Highlight' },
+  { id: 'red', value: 'rgba(239, 68, 68, 0.35)', label: 'Red' },
+  { id: 'orange', value: 'rgba(249, 115, 22, 0.35)', label: 'Orange' },
+  { id: 'yellow', value: 'rgba(250, 204, 21, 0.4)', label: 'Yellow' },
+  { id: 'green', value: 'rgba(34, 197, 94, 0.35)', label: 'Green' },
+  { id: 'blue', value: 'rgba(59, 130, 246, 0.35)', label: 'Blue' },
+  { id: 'purple', value: 'rgba(168, 85, 247, 0.4)', label: 'Purple' },
+  { id: 'pink', value: 'rgba(236, 72, 153, 0.35)', label: 'Pink' },
+  { id: 'cyan', value: 'rgba(6, 182, 212, 0.35)', label: 'Cyan' },
+];
+
 export const MOCK_NOTES: Note[] = [
   {
     id: '1',

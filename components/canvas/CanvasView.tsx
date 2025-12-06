@@ -347,6 +347,12 @@ const DraggableNote: React.FC<DraggableNoteProps> = ({
 
     for (const block of note.blocks) {
       if (charCount > 200) break; // Stop if we have enough text
+      if (block.type === 'image') {
+        segments.push('[Image]');
+        charCount += 7;
+        continue;
+      }
+
       const text = stripHtml(block.content).trim();
       if (!text) continue;
 

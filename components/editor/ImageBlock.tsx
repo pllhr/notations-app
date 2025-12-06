@@ -8,13 +8,14 @@ interface ImageBlockProps {
     className?: string;
 }
 
-export const ImageBlock: React.FC<ImageBlockProps> = ({ id, src, onDelete, className = '' }) => {
+export const ImageBlock = React.memo<ImageBlockProps>(({ id, src, onDelete, className = '' }) => {
     return (
         <div className={`relative group/image ${className} my-4`}>
             <img
                 src={src}
                 alt="Note attachment"
                 className="max-w-full rounded-lg border border-gray-200 dark:border-neutral-800 shadow-sm"
+                loading="lazy"
             />
             {onDelete && (
                 <button
@@ -27,4 +28,6 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({ id, src, onDelete, class
             )}
         </div>
     );
-};
+});
+
+ImageBlock.displayName = 'ImageBlock';

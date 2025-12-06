@@ -13,7 +13,7 @@ import { useHistory, HistoryMode } from '../hooks/useHistory';
 import { SearchPalette } from './ui/SearchPalette';
 import { AIMagicModal } from './ui/AIMagicModal';
 import { generateNoteFromPrompt } from '../services/geminiService';
-import { getNotes, saveNote, deleteNoteAction } from '../app/actions';
+import { getNotes, saveNote, deleteNoteAction, getTags } from '../app/actions';
 import { User } from '../types';
 import { UserProfile } from './auth/UserProfile';
 import { SieveView } from './sieve/SieveView';
@@ -142,14 +142,25 @@ const NotationsApp: React.FC<NotationsAppProps> = ({ user }) => {
     return notes.filter(n => n.tags?.includes(selectedTag));
   }, [notes, selectedTag]);
 
-  // Compute unique tags for Sidebar
+  // Compute unique tags for Sidebar (from DB + notes)
+  const [globalTags, setGlobalTags] = useState<string[]>([]);
+
+  useEffect(() => {
+    const loadGlobalTags = async () => {
+      const dbTags = await getTags();
+      setGlobalTags(dbTags.map(t => t.name));
+    };
+    loadGlobalTags();
+  }, []);
+
   const uniqueTags = useMemo(() => {
-    const tags = new Set<string>();
+    // Merge global tags from DB with tags from notes
+    const allTags = new Set<string>(globalTags);
     notes.forEach(note => {
-      note.tags?.forEach(tag => tags.add(tag));
+      note.tags?.forEach(tag => allTags.add(tag));
     });
-    return Array.from(tags).sort();
-  }, [notes]);
+    return Array.from(allTags).sort();
+  }, [notes, globalTags]);
 
   // Keyboard Shortcuts: Undo/Redo, Search, and Magic Create
   useEffect(() => {
