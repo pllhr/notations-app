@@ -5,7 +5,7 @@ import { Sidebar } from './layout/Sidebar';
 import { EditorView } from './editor/EditorView';
 import { CanvasView } from './canvas/CanvasView';
 import { GraphView } from './graph/GraphView';
-import { ViewMode, Note } from '../types';
+import { ViewMode, Note, Tag } from '../types';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ConfirmationModal } from './ui/ConfirmationModal';
 import { UnsavedChangesModal } from './ui/UnsavedChangesModal';
@@ -16,7 +16,6 @@ import { generateNoteFromPrompt } from '../services/geminiService';
 import { getNotes, saveNote, deleteNoteAction, getTags } from '../app/actions';
 import { User } from '../types';
 import { UserProfile } from './auth/UserProfile';
-import { SieveView } from './sieve/SieveView';
 
 interface NotationsAppProps {
   user?: Partial<User> | null;
@@ -144,11 +143,13 @@ const NotationsApp: React.FC<NotationsAppProps> = ({ user }) => {
 
   // Compute unique tags for Sidebar (from DB + notes)
   const [globalTags, setGlobalTags] = useState<string[]>([]);
+  const [tagsWithColors, setTagsWithColors] = useState<Tag[]>([]);
 
   useEffect(() => {
     const loadGlobalTags = async () => {
       const dbTags = await getTags();
       setGlobalTags(dbTags.map(t => t.name));
+      setTagsWithColors(dbTags);
     };
     loadGlobalTags();
   }, []);
@@ -466,6 +467,8 @@ const NotationsApp: React.FC<NotationsAppProps> = ({ user }) => {
                 onConnectNotes={handleConnectNotes}
                 onDeleteNote={handleRequestDelete}
                 isDarkMode={isDarkMode}
+                tagsWithColors={tagsWithColors}
+                selectedNoteId={activeNoteId}
               />
             </motion.div>
           )}
@@ -484,18 +487,6 @@ const NotationsApp: React.FC<NotationsAppProps> = ({ user }) => {
                 onDeleteNote={handleRequestDelete}
                 isDarkMode={isDarkMode}
               />
-            </motion.div>
-          )}
-
-          {view === ViewMode.SIEVE && (
-            <motion.div
-              key="sieve"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="h-full w-full"
-            >
-              <SieveView />
             </motion.div>
           )}
         </AnimatePresence>

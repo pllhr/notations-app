@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ViewMode } from '../../types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Type, Grid, Share2, PlusCircle, Search, Undo2, Redo2, Sparkles, Hash, X, Moon, Sun, Box, Settings } from 'lucide-react';
+import { Type, Grid, Share2, PlusCircle, Search, Undo2, Redo2, Sparkles, Hash, X, Moon, Sun, Settings } from 'lucide-react';
 import Link from 'next/link';
 
 interface SidebarProps {
@@ -43,7 +43,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: ViewMode.EDITOR, icon: <Type size={20} />, label: 'Editor' },
     { id: ViewMode.CANVAS, icon: <Grid size={20} />, label: 'Canvas' },
     { id: ViewMode.GRAPH, icon: <Share2 size={20} />, label: 'Graph' },
-    { id: ViewMode.SIEVE, icon: <Box size={20} />, label: 'Sieve AI' },
   ];
 
   return (

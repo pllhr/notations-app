@@ -62,12 +62,6 @@
     },
     "00a27361b0caf8eef52e679cc4febeb0dfd20c4e0e": {
       "workers": {
-        "app/admin/page": {
-          "moduleId": "[project]/.next-internal/server/app/admin/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": false,
-          "exportedName": "getTags",
-          "filename": "app/actions.ts"
-        },
         "app/page": {
           "moduleId": "[project]/.next-internal/server/app/page/actions.js { ACTIONS_MODULE0 => \"[project]/services/geminiService.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/app/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": false,
@@ -76,7 +70,6 @@
         }
       },
       "layer": {
-        "app/admin/page": "action-browser",
         "app/page": "action-browser"
       },
       "filename": "app/actions.ts",
@@ -126,51 +119,6 @@
       },
       "filename": "app/actions.ts",
       "exportedName": "updateUserProfile"
-    },
-    "6041cd847ee719e7a0e25a948ee66183b2ceb07cb1": {
-      "workers": {
-        "app/admin/page": {
-          "moduleId": "[project]/.next-internal/server/app/admin/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": false,
-          "exportedName": "createTag",
-          "filename": "app/actions.ts"
-        }
-      },
-      "layer": {
-        "app/admin/page": "action-browser"
-      },
-      "filename": "app/actions.ts",
-      "exportedName": "createTag"
-    },
-    "7091c2d1bc383dc801598a0e074a6e2170cb10531b": {
-      "workers": {
-        "app/admin/page": {
-          "moduleId": "[project]/.next-internal/server/app/admin/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": false,
-          "exportedName": "updateTag",
-          "filename": "app/actions.ts"
-        }
-      },
-      "layer": {
-        "app/admin/page": "action-browser"
-      },
-      "filename": "app/actions.ts",
-      "exportedName": "updateTag"
-    },
-    "609dd24123ceaaf7918c2df81e340c49a02c357c50": {
-      "workers": {
-        "app/admin/page": {
-          "moduleId": "[project]/.next-internal/server/app/admin/page/actions.js { ACTIONS_MODULE0 => \"[project]/app/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": false,
-          "exportedName": "deleteTag",
-          "filename": "app/actions.ts"
-        }
-      },
-      "layer": {
-        "app/admin/page": "action-browser"
-      },
-      "filename": "app/actions.ts",
-      "exportedName": "deleteTag"
     }
   },
   "edge": {},

@@ -1,20 +1,22 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Note, NoteBlock, Tag } from '../../types';
+import { Note, NoteBlock, Tag, TextConnection, CONNECTION_COLORS } from '../../types';
 import { getTags } from '../../app/actions';
 import { NOTE_COLORS, BLOCK_HIGHLIGHT_COLORS } from '../../constants';
 import {
   Plus, Trash2, Sparkles,
   Heading1, Type, List, CheckSquare, Quote, Code, Image as ImageIcon,
   Bold, Italic, Strikethrough, Palette, Hash, X, Copy, Check, Save, Highlighter, Underline, Link as LinkIcon,
-  ChevronDown
+  ChevronDown, MoreVertical, CaseUpper, Paintbrush
 } from 'lucide-react';
 import { expandNoteWithAI } from '../../services/geminiService';
 import { HistoryMode } from '../../hooks/useHistory';
 import { ContentBlock } from './ContentBlock';
 import { ImageBlock } from './ImageBlock';
 import { ConfirmationModal } from '../ui/ConfirmationModal';
+import { TextLinkingMode } from './TextLinkingMode';
+import { TextConnectionLines } from './TextConnectionLines';
 
 interface EditorViewProps {
   activeNote: Note | null;
@@ -34,6 +36,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
   const [isAiLoading, setIsAiLoading] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const blocksContainerRef = useRef<HTMLDivElement>(null);
 
   // Slash Menu State
   const [slashMenuOpen, setSlashMenuOpen] = useState(false);
@@ -69,6 +72,9 @@ export const EditorView: React.FC<EditorViewProps> = ({
   // Copy Feedback State
   const [copiedBlockId, setCopiedBlockId] = useState<string | null>(null);
 
+  // Save Success Animation State
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
   // Image Deletion Modal State
   const [imageToDelete, setImageToDelete] = useState<string | null>(null);
 
@@ -81,6 +87,35 @@ export const EditorView: React.FC<EditorViewProps> = ({
 
   // Font Selector State
   const [fontDropdownOpen, setFontDropdownOpen] = useState(false);
+
+  // Color Dropdown States
+  const [highlightDropdownOpen, setHighlightDropdownOpen] = useState(false);
+  const [textColorDropdownOpen, setTextColorDropdownOpen] = useState(false);
+
+  // Active Formatting States
+  const [activeFormats, setActiveFormats] = useState({
+    bold: false,
+    italic: false,
+    underline: false,
+    strikeThrough: false,
+    inlineCode: false,
+    uppercase: false,
+    currentFont: '',
+  });
+
+  // Text Linking Mode State (for text-to-text connections)
+  const [isTextLinkingMode, setIsTextLinkingMode] = useState(false);
+  const [sourceTextForLinking, setSourceTextForLinking] = useState('');
+  const [sourceBlockIdForLinking, setSourceBlockIdForLinking] = useState('');
+  const [currentLinkColor, setCurrentLinkColor] = useState(CONNECTION_COLORS[0]);
+
+  // Link Delete Confirmation Modal
+  const [linkDeleteModal, setLinkDeleteModal] = useState<{
+    linkId: string;
+    blockId: string;
+    linkName: string;
+    position: { x: number; y: number };
+  } | null>(null);
 
   // Available fonts
   const AVAILABLE_FONTS = [
@@ -128,8 +163,12 @@ export const EditorView: React.FC<EditorViewProps> = ({
       const selection = window.getSelection();
 
       // Validate selection
+      // Don't hide toolbar if font dropdown is open (keeps selection visible while choosing font)
       if (!selection || selection.isCollapsed || !editorRef.current) {
-        setFormatToolbarPosition(null);
+        // Only hide if font dropdown is not open
+        if (!fontDropdownOpen) {
+          setFormatToolbarPosition(null);
+        }
         return;
       }
 
@@ -153,11 +192,41 @@ export const EditorView: React.FC<EditorViewProps> = ({
       const rect = range.getBoundingClientRect();
 
       // Only show if we have a visible width and aren't in a menu interaction
-      if (rect.width > 1 && !slashMenuOpen) {
+      if (rect.width > 1 && !slashMenuOpen && !isTextLinkingMode) {
         setFormatToolbarPosition({
           // Ensure it doesn't go off-screen top
           top: Math.max(10, rect.top - 60),
           left: rect.left + rect.width / 2
+        });
+
+        // Check active formatting states
+        const selectedText = selection.toString();
+
+        // Check if inside inline code
+        let isInCode = false;
+        let node: Node | null = range.commonAncestorContainer;
+        while (node && node !== document.body) {
+          if (node instanceof HTMLElement && node.tagName === 'CODE' && node.classList.contains('inline-code')) {
+            isInCode = true;
+            break;
+          }
+          node = node.parentNode;
+        }
+
+        // Check if text is uppercase
+        const isUppercase = selectedText.length > 0 && selectedText === selectedText.toUpperCase() && selectedText !== selectedText.toLowerCase();
+
+        // Get current font
+        const currentFont = document.queryCommandValue('fontName').replace(/['"]/g, '');
+
+        setActiveFormats({
+          bold: document.queryCommandState('bold'),
+          italic: document.queryCommandState('italic'),
+          underline: document.queryCommandState('underline'),
+          strikeThrough: document.queryCommandState('strikeThrough'),
+          inlineCode: isInCode,
+          uppercase: isUppercase,
+          currentFont: currentFont,
         });
       } else {
         setFormatToolbarPosition(null);
@@ -171,7 +240,105 @@ export const EditorView: React.FC<EditorViewProps> = ({
       document.removeEventListener('selectionchange', handleSelectionChange);
       document.removeEventListener('scroll', handleSelectionChange, true);
     };
-  }, [slashMenuOpen]);
+  }, [slashMenuOpen, fontDropdownOpen, isTextLinkingMode]);
+
+  // Handle atomic link delete button clicks - show confirmation modal
+  useEffect(() => {
+    if (!activeNote) return;
+
+    const handleLinkDeleteClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+
+      // Check if clicking on delete button
+      if (target.classList.contains('atomic-link-delete')) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Find the parent wrapper
+        const wrapper = target.closest('.atomic-link-wrapper') as HTMLElement;
+        if (!wrapper) return;
+
+        // Get the link ID and name
+        const linkId = wrapper.getAttribute('data-link-id');
+        const linkName = wrapper.querySelector('strong')?.textContent || 'Link';
+
+        if (!linkId) {
+          wrapper.remove();
+          return;
+        }
+
+        // Find the block containing this link
+        let blockEl: HTMLElement | null = wrapper.parentElement;
+        while (blockEl && !blockEl.id?.startsWith('block-')) {
+          blockEl = blockEl.parentElement;
+        }
+
+        if (!blockEl) {
+          wrapper.remove();
+          return;
+        }
+
+        const blockId = blockEl.id.replace('block-', '');
+        const rect = wrapper.getBoundingClientRect();
+
+        // Show confirmation modal
+        setLinkDeleteModal({
+          linkId,
+          blockId,
+          linkName,
+          position: { x: rect.left + rect.width / 2, y: rect.bottom + 8 }
+        });
+      }
+    };
+
+    const editorEl = editorRef.current;
+    if (editorEl) {
+      editorEl.addEventListener('click', handleLinkDeleteClick, true);
+      return () => editorEl.removeEventListener('click', handleLinkDeleteClick, true);
+    }
+  }, [activeNote]);
+
+  // Function to confirm and delete link
+  const handleConfirmLinkDelete = useCallback(() => {
+    if (!linkDeleteModal || !activeNote) return;
+
+    const { linkId, blockId } = linkDeleteModal;
+
+    // Find and animate the wrapper
+    const wrapper = document.querySelector(`[data-link-id="${linkId}"]`) as HTMLElement;
+    if (wrapper) {
+      wrapper.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+      wrapper.style.opacity = '0';
+      wrapper.style.transform = 'scale(0.5) translateY(-10px)';
+      wrapper.style.pointerEvents = 'none';
+    }
+
+    // Close modal immediately
+    setLinkDeleteModal(null);
+
+    // Remove after animation
+    setTimeout(() => {
+      // Find the block element
+      const blockEl = document.getElementById(`block-${blockId}`);
+
+      if (wrapper) {
+        wrapper.remove();
+      }
+
+      // Sync the DOM content to state
+      if (blockEl) {
+        // Get the contenteditable element inside the block
+        const contentEl = blockEl.querySelector('[contenteditable="true"]') || blockEl;
+        const newContent = contentEl.innerHTML || '';
+
+        const newBlocks = activeNote.blocks.map(b =>
+          b.id === blockId ? { ...b, content: newContent } : b
+        );
+
+        onUpdateNote({ ...activeNote, blocks: newBlocks }, 'PUSH');
+      }
+    }, 300);
+  }, [linkDeleteModal, activeNote, onUpdateNote]);
 
 
 
@@ -182,6 +349,77 @@ export const EditorView: React.FC<EditorViewProps> = ({
       </div>
     );
   }
+
+  // --- Text Connection Functions ---
+
+  const handleStartTextLinking = () => {
+    // Get the currently selected text
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) return;
+
+    const selectedText = selection.toString().trim();
+    if (!selectedText) return;
+
+    // Find the block containing the selection
+    let node = selection.anchorNode;
+    let blockId = '';
+    while (node && node !== document.body) {
+      if (node instanceof HTMLElement) {
+        const id = node.id?.replace('block-', '');
+        if (id && node.id?.startsWith('block-')) {
+          blockId = id;
+          break;
+        }
+      }
+      node = node.parentNode;
+    }
+
+    if (!blockId) return;
+
+    setSourceTextForLinking(selectedText);
+    setSourceBlockIdForLinking(blockId);
+    setIsTextLinkingMode(true);
+    setFormatToolbarPosition(null);
+  };
+
+  const handleConfirmTextConnection = (targetText: string, targetBlockId: string) => {
+    if (!sourceTextForLinking || !sourceBlockIdForLinking) {
+      handleCancelTextLinking();
+      return;
+    }
+
+    // Create the connection
+    const newConnection: TextConnection = {
+      id: crypto.randomUUID(),
+      sourceBlockId: sourceBlockIdForLinking,
+      sourceText: sourceTextForLinking,
+      targetBlockId: targetBlockId,
+      targetText: targetText,
+      color: currentLinkColor,
+      createdAt: Date.now()
+    };
+
+    // Update the source block with the new connection
+    const newBlocks = activeNote.blocks.map(block => {
+      if (block.id === sourceBlockIdForLinking) {
+        return {
+          ...block,
+          textConnections: [...(block.textConnections || []), newConnection]
+        };
+      }
+      return block;
+    });
+
+    onUpdateNote({ ...activeNote, blocks: newBlocks }, 'PUSH');
+    handleCancelTextLinking();
+  };
+
+  const handleCancelTextLinking = () => {
+    setIsTextLinkingMode(false);
+    setSourceTextForLinking('');
+    setSourceBlockIdForLinking('');
+  };
+
 
   // --- Helper Functions ---
 
@@ -292,13 +530,17 @@ export const EditorView: React.FC<EditorViewProps> = ({
   const handleBlockKeyDown = useCallback((e: React.KeyboardEvent, id: string) => {
     if (!activeNote) return;
 
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // Shift+Enter: Create new block
+    if (e.key === 'Enter' && e.shiftKey) {
       e.preventDefault();
       const currentBlock = activeNote.blocks.find(b => b.id === id);
       const nextType = currentBlock?.type === 'bullet' ? 'bullet' : 'paragraph';
       addBlock(id, nextType);
       setSlashMenuOpen(false);
-    } else if (e.key === 'Backspace') {
+    }
+    // Plain Enter: Insert line break (let browser handle it naturally)
+    // No preventDefault here, so <br> will be inserted by contentEditable
+    else if (e.key === 'Backspace') {
       const element = e.currentTarget as HTMLElement;
       const selection = window.getSelection();
       if (!selection || selection.rangeCount === 0) return;
@@ -381,6 +623,17 @@ export const EditorView: React.FC<EditorViewProps> = ({
 
   const formatText = (command: string) => {
     document.execCommand(command);
+
+    // Update active formats immediately after applying
+    requestAnimationFrame(() => {
+      setActiveFormats(prev => ({
+        ...prev,
+        bold: document.queryCommandState('bold'),
+        italic: document.queryCommandState('italic'),
+        underline: document.queryCommandState('underline'),
+        strikeThrough: document.queryCommandState('strikeThrough'),
+      }));
+    });
   };
 
   const handleColorChange = (color: string) => {
@@ -437,16 +690,30 @@ export const EditorView: React.FC<EditorViewProps> = ({
     if (!activeNote) return;
 
     let newBlocks = [...activeNote.blocks];
-    if (targetBlockId) {
-      newBlocks = newBlocks.map(b => b.id === targetBlockId ? newBlock : b);
-    } else if (focusedBlockId) {
-      const index = newBlocks.findIndex(b => b.id === focusedBlockId);
+
+    // Determine insertion point - always insert AFTER the reference block, never replace
+    const insertionBlockId = targetBlockId || focusedBlockId;
+
+    if (insertionBlockId) {
+      const index = newBlocks.findIndex(b => b.id === insertionBlockId);
       if (index !== -1) {
-        newBlocks.splice(index + 1, 0, newBlock);
+        // Check if target block is an empty placeholder that should be replaced
+        const targetBlock = newBlocks[index];
+        const isEmptyPlaceholder = targetBlock.type === 'paragraph' &&
+          (!targetBlock.content || targetBlock.content.trim() === '' || targetBlock.content === '<br>');
+
+        if (isEmptyPlaceholder && targetBlockId) {
+          // Replace empty placeholder with image
+          newBlocks[index] = newBlock;
+        } else {
+          // Insert image AFTER the current block
+          newBlocks.splice(index + 1, 0, newBlock);
+        }
       } else {
         newBlocks.push(newBlock);
       }
     } else {
+      // No focused block - add at the end
       newBlocks.push(newBlock);
     }
 
@@ -494,7 +761,9 @@ export const EditorView: React.FC<EditorViewProps> = ({
       const files = Array.from(e.clipboardData.files).filter(f => f.type.startsWith('image/'));
       if (files.length > 0) {
         e.preventDefault();
-        files.forEach(file => handleFileUpload(file, focusedBlockId || undefined));
+        // Don't pass focusedBlockId as targetBlockId - let it use focusedBlockId internally
+        // This ensures images are inserted AFTER current block, not replacing it
+        files.forEach(file => handleFileUpload(file));
         return;
       }
     }
@@ -695,20 +964,26 @@ export const EditorView: React.FC<EditorViewProps> = ({
 
     const platformInfo = await getPlatformInfo(url);
 
+    // Generate unique ID for the link
+    const linkId = crypto.randomUUID();
+
+    // Delete button SVG (X icon)
+    const deleteBtn = `<button class="atomic-link-delete" data-link-id="${linkId}" aria-label="Remover link" title="Remover link">×</button>`;
+
     switch (option) {
       case 'mention':
       case 'embed':
-        // Clean format: [icon] name · platform
-        content = `<a href="${url}" class="${platformInfo.cssClass}" target="_blank" rel="noopener noreferrer"><span class="link-logo">${platformInfo.logo}</span><span class="link-text"><strong>${platformInfo.name}</strong><span class="link-separator">·</span><span class="link-platform">${platformInfo.platform}</span></span></a>`;
+        // Clean format: [icon] name · platform - ATOMIC (non-editable)
+        content = `<span class="atomic-link-wrapper" contenteditable="false" data-link-block="true" data-link-id="${linkId}" data-url="${url}">${deleteBtn}<a href="${url}" class="${platformInfo.cssClass} atomic-link" target="_blank" rel="noopener noreferrer"><span class="link-logo">${platformInfo.logo}</span><span class="link-text"><strong>${platformInfo.name}</strong><span class="link-separator">·</span><span class="link-platform">${platformInfo.platform}</span></span></a></span> `;
         break;
       case 'bookmark':
-        // Bookmark style
-        content = `<a href="${url}" class="${platformInfo.cssClass} bookmark-style" target="_blank" rel="noopener noreferrer"><span class="link-logo">${platformInfo.logo}</span><span class="link-text"><strong>${platformInfo.name}</strong><span class="link-separator">·</span><span class="link-platform">${platformInfo.platform}</span></span></a>`;
+        // Bookmark style - ATOMIC (non-editable)
+        content = `<span class="atomic-link-wrapper bookmark-style" contenteditable="false" data-link-block="true" data-link-id="${linkId}" data-url="${url}">${deleteBtn}<a href="${url}" class="${platformInfo.cssClass} atomic-link" target="_blank" rel="noopener noreferrer"><span class="link-logo">${platformInfo.logo}</span><span class="link-text"><strong>${platformInfo.name}</strong><span class="link-separator">·</span><span class="link-platform">${platformInfo.platform}</span></span></a></span> `;
         break;
       case 'url':
       default:
-        // Plain URL format
-        content = `<a href="${url}" class="${platformInfo.cssClass}" target="_blank" rel="noopener noreferrer"><span class="link-logo">${platformInfo.logo}</span><span class="link-text"><strong>${platformInfo.name}</strong><span class="link-separator">·</span><span class="link-platform">${platformInfo.platform}</span></span></a>`;
+        // Plain URL format - ATOMIC (non-editable)
+        content = `<span class="atomic-link-wrapper" contenteditable="false" data-link-block="true" data-link-id="${linkId}" data-url="${url}">${deleteBtn}<a href="${url}" class="${platformInfo.cssClass} atomic-link" target="_blank" rel="noopener noreferrer"><span class="link-logo">${platformInfo.logo}</span><span class="link-text"><strong>${platformInfo.name}</strong><span class="link-separator">·</span><span class="link-platform">${platformInfo.platform}</span></span></a></span> `;
         break;
     }
 
@@ -785,14 +1060,62 @@ export const EditorView: React.FC<EditorViewProps> = ({
 
         {/* Header Actions (Always visible for better UX) */}
         <div className="flex items-center gap-1">
-          {/* Save Button */}
-          <button
-            onClick={onSave}
-            className={`p-2 rounded-md transition-all duration-300 ${hasUnsavedChanges ? 'bg-black dark:bg-white text-white dark:text-black shadow-lg scale-110' : 'hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-500 dark:text-neutral-400'}`}
-            title={hasUnsavedChanges ? "Save Changes" : "Saved"}
+          {/* Save Button with Success Animation */}
+          <motion.button
+            onClick={() => {
+              onSave();
+              setSaveSuccess(true);
+              setTimeout(() => setSaveSuccess(false), 1500);
+            }}
+            className={`relative p-2 rounded-md transition-all duration-300 overflow-hidden ${saveSuccess
+              ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
+              : hasUnsavedChanges
+                ? 'bg-black dark:bg-white text-white dark:text-black shadow-lg'
+                : 'hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-500 dark:text-neutral-400'
+              }`}
+            title={hasUnsavedChanges ? "Salvar Alterações" : "Salvo"}
+            whileTap={{ scale: 0.9 }}
+            animate={saveSuccess ? { scale: [1, 1.1, 1] } : {}}
+            transition={{ duration: 0.3 }}
           >
-            <Save size={20} className={hasUnsavedChanges ? "animate-pulse" : ""} />
-          </button>
+            <AnimatePresence mode="wait">
+              {saveSuccess ? (
+                <motion.div
+                  key="check"
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 500,
+                    damping: 25
+                  }}
+                >
+                  <Check size={20} strokeWidth={3} />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="save"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <Save size={20} className={hasUnsavedChanges ? "animate-pulse" : ""} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Success ripple effect */}
+            {saveSuccess && (
+              <motion.div
+                className="absolute inset-0 bg-white/30 rounded-md"
+                initial={{ scale: 0, opacity: 1 }}
+                animate={{ scale: 2, opacity: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+              />
+            )}
+          </motion.button>
 
           <div className="relative color-picker-container">
             <button
@@ -830,16 +1153,6 @@ export const EditorView: React.FC<EditorViewProps> = ({
             </AnimatePresence>
           </div>
 
-          <button
-            onMouseDown={(e) => {
-              e.preventDefault();
-              document.execCommand('bold');
-            }}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-500 dark:text-neutral-400 hover:text-black dark:hover:text-white rounded-md transition-colors"
-            title="Bold Title"
-          >
-            <Bold size={20} />
-          </button>
           <button
             onClick={() => onDeleteNote(activeNote.id)}
             className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 text-gray-500 dark:text-neutral-400 rounded-md transition-colors"
@@ -936,49 +1249,64 @@ export const EditorView: React.FC<EditorViewProps> = ({
       </div>
 
       {/* Blocks */}
-      <div className="space-y-2">
+      <div className="space-y-2 relative" ref={blocksContainerRef}>
+        {/* Permanent Text Connection Lines */}
+        <TextConnectionLines
+          blocks={activeNote.blocks}
+          containerRef={blocksContainerRef}
+        />
+
         <AnimatePresence initial={false}>
-          {activeNote.blocks.map((block) => (
-            <motion.div
-              key={block.id}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="group flex items-start gap-2 relative"
-            >
-              {/* Hover Handle */}
-              <div className="mt-2 opacity-0 group-hover:opacity-20 transition-opacity absolute -left-6 cursor-grab">
-                <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full" />
-              </div>
+          {activeNote.blocks.map((block) => {
+            const hasConnections = block.textConnections && block.textConnections.length > 0;
 
-              <div
-                className="w-full relative group/content rounded-lg transition-all duration-200"
+            return (
+              <motion.div
+                key={block.id}
+                id={`block-${block.id}`}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className={`group flex items-start gap-2 relative
+                ${hasConnections ? 'block-has-connections' : ''}
+              `}
                 style={{
-                  backgroundColor: block.highlightColor || 'transparent',
-                }}
+                  '--connection-color': block.textConnections?.[0]?.color,
+                } as React.CSSProperties}
               >
-                <div className={`flex items-start w-full ${block.type === 'bullet' ? 'gap-3' : 'gap-2'} ${block.highlightColor ? 'px-3 py-2' : ''}`}>
-                  {block.type === 'bullet' && (
-                    <span className="text-2xl leading-6 select-none dark:text-white">•</span>
-                  )}
-                  {block.type === 'todo' && (
-                    <div
-                      className={`mt-1.5 w-5 h-5 border-2 border-black dark:border-white cursor-pointer transition-colors flex-shrink-0 rounded ${block.checked ? 'bg-black dark:bg-white' : 'bg-transparent'}`}
-                      contentEditable={false}
-                      onClick={() => {
-                        handleTextChange(note => ({
-                          ...note,
-                          blocks: note.blocks.map(b => b.id === block.id ? { ...b, checked: !b.checked } : b)
-                        }));
-                      }}
-                    />
-                  )}
+                {/* Hover Handle */}
+                <div className="mt-2 opacity-0 group-hover:opacity-20 transition-opacity absolute -left-6 cursor-grab">
+                  <div className="w-1.5 h-1.5 bg-black dark:bg-white rounded-full" />
+                </div>
 
-                  {block.type !== 'image' && (
-                    <ContentBlock
-                      id={block.id}
-                      html={block.content}
-                      tagName={block.type === 'heading' ? 'h1' : 'div'}
-                      className={`w-full outline-none resize-none overflow-hidden text-black dark:text-white transition-all
+                <div
+                  className="w-full relative group/content rounded-lg transition-all duration-200"
+                  style={{
+                    backgroundColor: block.highlightColor || 'transparent',
+                  }}
+                >
+                  <div className={`flex items-start w-full ${block.type === 'bullet' ? 'gap-3' : 'gap-2'} ${block.highlightColor ? 'px-3 py-2' : ''}`}>
+                    {block.type === 'bullet' && (
+                      <span className="text-2xl leading-6 select-none dark:text-white">•</span>
+                    )}
+                    {block.type === 'todo' && (
+                      <div
+                        className={`mt-1.5 w-5 h-5 border-2 border-black dark:border-white cursor-pointer transition-colors flex-shrink-0 rounded ${block.checked ? 'bg-black dark:bg-white' : 'bg-transparent'}`}
+                        contentEditable={false}
+                        onClick={() => {
+                          handleTextChange(note => ({
+                            ...note,
+                            blocks: note.blocks.map(b => b.id === block.id ? { ...b, checked: !b.checked } : b)
+                          }));
+                        }}
+                      />
+                    )}
+
+                    {block.type !== 'image' && (
+                      <ContentBlock
+                        id={block.id}
+                        html={block.content}
+                        tagName={block.type === 'heading' ? 'h1' : 'div'}
+                        className={`w-full outline-none resize-none overflow-hidden text-black dark:text-white transition-all
                             ${block.type === 'heading' ? 'text-3xl font-bold mb-4 mt-6' : ''}
                             ${block.type === 'paragraph' ? 'text-lg leading-relaxed mb-2' : ''}
                             ${block.type === 'todo' ? (block.checked ? 'text-lg line-through text-gray-400 dark:text-neutral-600' : 'text-lg') : ''}
@@ -986,83 +1314,84 @@ export const EditorView: React.FC<EditorViewProps> = ({
                             ${block.type === 'blockquote' ? 'text-xl italic border-l-4 border-black dark:border-white pl-4 py-2 text-gray-600 dark:text-neutral-400 my-4' : ''}
                             ${block.type === 'code' ? 'font-mono text-sm bg-gray-50 dark:bg-neutral-900 p-4 rounded-md text-gray-800 dark:text-neutral-200 my-2 whitespace-pre-wrap' : ''}
 `}
-                      placeholder={block.type === 'paragraph' ? "Type '/' for commands" : "Type something..."}
-                      onChange={updateBlockContent}
-                      onKeyDown={handleBlockKeyDown}
-                      autoFocus={focusedBlockId === block.id}
-                      onFocus={setFocusedBlockId}
-                    />
-                  )}
-                  {block.type === 'image' && (
-                    <ImageBlock
-                      id={block.id}
-                      src={block.content}
-                      onDelete={(id) => setImageToDelete(id)}
-                      className="w-full"
-                    />
+                        placeholder={block.type === 'paragraph' ? "Type '/' for commands" : "Type something..."}
+                        onChange={updateBlockContent}
+                        onKeyDown={handleBlockKeyDown}
+                        autoFocus={focusedBlockId === block.id}
+                        onFocus={setFocusedBlockId}
+                      />
+                    )}
+                    {block.type === 'image' && (
+                      <ImageBlock
+                        id={block.id}
+                        src={block.content}
+                        onDelete={(id) => setImageToDelete(id)}
+                        className="w-full"
+                      />
+                    )}
+                  </div>
+
+                  {/* Block Actions Container */}
+                  <div className="absolute -right-10 top-1/2 -translate-y-1/2 flex flex-col gap-1 opacity-0 group-hover/content:opacity-100 transition-all">
+                    {/* Highlight Color Picker Button */}
+                    {block.type !== 'image' && block.type !== 'code' && (
+                      <div className="relative">
+                        <button
+                          onClick={() => {
+                            setFocusedBlockId(block.id);
+                            setHighlightPickerOpen(highlightPickerOpen && focusedBlockId === block.id ? false : true);
+                          }}
+                          className={`p-1.5 rounded-md transition-colors ${block.highlightColor ? 'bg-gray-200 dark:bg-neutral-700' : 'hover:bg-gray-100 dark:hover:bg-neutral-800'}`}
+                          title="Highlight Color"
+                          style={{ borderLeft: block.highlightColor ? `3px solid ${block.highlightColor.replace('0.15', '0.8').replace('0.2', '0.8')}` : undefined }}
+                        >
+                          <Highlighter size={14} className="text-gray-500 dark:text-neutral-400" />
+                        </button>
+
+                        {/* Highlight Color Dropdown */}
+                        <AnimatePresence>
+                          {highlightPickerOpen && focusedBlockId === block.id && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.9, x: 10 }}
+                              animate={{ opacity: 1, scale: 1, x: 0 }}
+                              exit={{ opacity: 0, scale: 0.9, x: 10 }}
+                              className="absolute right-full mr-2 top-0 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 shadow-xl rounded-lg p-2 flex flex-wrap gap-1.5 z-50 w-32"
+                            >
+                              {BLOCK_HIGHLIGHT_COLORS.map((color) => (
+                                <button
+                                  key={color.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleBlockHighlightChange(block.id, color.value);
+                                  }}
+                                  className={`w-6 h-6 rounded-md border border-gray-300 dark:border-neutral-600 transition-transform hover:scale-110 ${block.highlightColor === color.value ? 'ring-2 ring-black dark:ring-white ring-offset-1 dark:ring-offset-neutral-900' : ''}`}
+                                  style={{ backgroundColor: color.id === 'none' ? 'transparent' : color.value.replace('0.15', '0.5').replace('0.2', '0.5') }}
+                                  title={color.label}
+                                >
+                                  {color.id === 'none' && <X size={12} className="mx-auto text-gray-400" />}
+                                </button>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Copy Button for Code Blocks */}
+                  {block.type === 'code' && (
+                    <button
+                      onClick={() => handleCopyBlock(block.id, block.content)}
+                      className="absolute top-2 right-2 p-1.5 bg-gray-200 dark:bg-neutral-800 hover:bg-gray-300 dark:hover:bg-neutral-700 rounded text-gray-600 dark:text-neutral-300 transition-all opacity-0 group-hover/content:opacity-100"
+                      title="Copy to clipboard"
+                    >
+                      {copiedBlockId === block.id ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
+                    </button>
                   )}
                 </div>
-
-                {/* Block Actions Container */}
-                <div className="absolute -right-10 top-1/2 -translate-y-1/2 flex flex-col gap-1 opacity-0 group-hover/content:opacity-100 transition-all">
-                  {/* Highlight Color Picker Button */}
-                  {block.type !== 'image' && block.type !== 'code' && (
-                    <div className="relative">
-                      <button
-                        onClick={() => {
-                          setFocusedBlockId(block.id);
-                          setHighlightPickerOpen(highlightPickerOpen && focusedBlockId === block.id ? false : true);
-                        }}
-                        className={`p-1.5 rounded-md transition-colors ${block.highlightColor ? 'bg-gray-200 dark:bg-neutral-700' : 'hover:bg-gray-100 dark:hover:bg-neutral-800'}`}
-                        title="Highlight Color"
-                        style={{ borderLeft: block.highlightColor ? `3px solid ${block.highlightColor.replace('0.15', '0.8').replace('0.2', '0.8')}` : undefined }}
-                      >
-                        <Highlighter size={14} className="text-gray-500 dark:text-neutral-400" />
-                      </button>
-
-                      {/* Highlight Color Dropdown */}
-                      <AnimatePresence>
-                        {highlightPickerOpen && focusedBlockId === block.id && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.9, x: 10 }}
-                            animate={{ opacity: 1, scale: 1, x: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, x: 10 }}
-                            className="absolute right-full mr-2 top-0 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 shadow-xl rounded-lg p-2 flex flex-wrap gap-1.5 z-50 w-32"
-                          >
-                            {BLOCK_HIGHLIGHT_COLORS.map((color) => (
-                              <button
-                                key={color.id}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleBlockHighlightChange(block.id, color.value);
-                                }}
-                                className={`w-6 h-6 rounded-md border border-gray-300 dark:border-neutral-600 transition-transform hover:scale-110 ${block.highlightColor === color.value ? 'ring-2 ring-black dark:ring-white ring-offset-1 dark:ring-offset-neutral-900' : ''}`}
-                                style={{ backgroundColor: color.id === 'none' ? 'transparent' : color.value.replace('0.15', '0.5').replace('0.2', '0.5') }}
-                                title={color.label}
-                              >
-                                {color.id === 'none' && <X size={12} className="mx-auto text-gray-400" />}
-                              </button>
-                            ))}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  )}
-                </div>
-
-                {/* Copy Button for Code Blocks */}
-                {block.type === 'code' && (
-                  <button
-                    onClick={() => handleCopyBlock(block.id, block.content)}
-                    className="absolute top-2 right-2 p-1.5 bg-gray-200 dark:bg-neutral-800 hover:bg-gray-300 dark:hover:bg-neutral-700 rounded text-gray-600 dark:text-neutral-300 transition-all opacity-0 group-hover/content:opacity-100"
-                    title="Copy to clipboard"
-                  >
-                    {copiedBlockId === block.id ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
       </div>
 
@@ -1154,8 +1483,12 @@ export const EditorView: React.FC<EditorViewProps> = ({
                     type="button"
                     aria-label="Bold"
                     aria-keyshortcuts="Meta+B Ctrl+B"
+                    aria-pressed={activeFormats.bold}
                     onMouseDown={(e) => { e.preventDefault(); formatText('bold'); }}
-                    className="p-2 hover:bg-white/20 dark:hover:bg-black/15 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95 focus:outline-none"
+                    className={`p-2 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95 focus:outline-none ${activeFormats.bold
+                      ? 'bg-white/30 dark:bg-black/30 text-blue-400 ring-1 ring-blue-400/50'
+                      : 'hover:bg-white/20 dark:hover:bg-black/15'
+                      }`}
                   >
                     <Bold size={16} strokeWidth={2.5} />
                   </button>
@@ -1171,8 +1504,12 @@ export const EditorView: React.FC<EditorViewProps> = ({
                     type="button"
                     aria-label="Italic"
                     aria-keyshortcuts="Meta+I Ctrl+I"
+                    aria-pressed={activeFormats.italic}
                     onMouseDown={(e) => { e.preventDefault(); formatText('italic'); }}
-                    className="p-2 hover:bg-white/20 dark:hover:bg-black/15 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95 focus:outline-none"
+                    className={`p-2 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95 focus:outline-none ${activeFormats.italic
+                      ? 'bg-white/30 dark:bg-black/30 text-blue-400 ring-1 ring-blue-400/50'
+                      : 'hover:bg-white/20 dark:hover:bg-black/15'
+                      }`}
                   >
                     <Italic size={16} strokeWidth={2.5} />
                   </button>
@@ -1188,8 +1525,12 @@ export const EditorView: React.FC<EditorViewProps> = ({
                     type="button"
                     aria-label="Underline"
                     aria-keyshortcuts="Meta+U Ctrl+U"
+                    aria-pressed={activeFormats.underline}
                     onMouseDown={(e) => { e.preventDefault(); formatText('underline'); }}
-                    className="p-2 hover:bg-white/20 dark:hover:bg-black/15 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95 focus:outline-none"
+                    className={`p-2 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95 focus:outline-none ${activeFormats.underline
+                      ? 'bg-white/30 dark:bg-black/30 text-blue-400 ring-1 ring-blue-400/50'
+                      : 'hover:bg-white/20 dark:hover:bg-black/15'
+                      }`}
                   >
                     <Underline size={16} strokeWidth={2.5} />
                   </button>
@@ -1204,13 +1545,185 @@ export const EditorView: React.FC<EditorViewProps> = ({
                   <button
                     type="button"
                     aria-label="Strikethrough"
+                    aria-pressed={activeFormats.strikeThrough}
                     onMouseDown={(e) => { e.preventDefault(); formatText('strikeThrough'); }}
-                    className="p-2 hover:bg-white/20 dark:hover:bg-black/15 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95 focus:outline-none"
+                    className={`p-2 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95 focus:outline-none ${activeFormats.strikeThrough
+                      ? 'bg-white/30 dark:bg-black/30 text-blue-400 ring-1 ring-blue-400/50'
+                      : 'hover:bg-white/20 dark:hover:bg-black/15'
+                      }`}
                   >
                     <Strikethrough size={16} strokeWidth={2.5} />
                   </button>
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 text-[10px] font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none shadow-lg">
                     Strikethrough
+                  </div>
+                </div>
+
+                {/* Inline Code Button */}
+                <div className="relative group/btn">
+                  <button
+                    type="button"
+                    aria-label="Inline Code"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      const selection = window.getSelection();
+                      if (!selection || selection.rangeCount === 0) return;
+
+                      const range = selection.getRangeAt(0);
+                      const selectedText = selection.toString();
+
+                      // Check if selection is inside a code element
+                      let parentCode: HTMLElement | null = null;
+                      let node: Node | null = range.commonAncestorContainer;
+
+                      while (node && node !== document.body) {
+                        if (node instanceof HTMLElement && node.tagName === 'CODE' && node.classList.contains('inline-code')) {
+                          parentCode = node;
+                          break;
+                        }
+                        node = node.parentNode;
+                      }
+
+                      if (parentCode) {
+                        // Check if selection covers the entire code content
+                        const codeContent = parentCode.textContent || '';
+                        const selectedContent = selectedText;
+
+                        if (selectedContent === codeContent || selectedContent.trim() === codeContent.trim()) {
+                          // Full selection - remove entire code element
+                          const parent = parentCode.parentNode;
+                          const textNode = document.createTextNode(codeContent);
+                          parent?.replaceChild(textNode, parentCode);
+
+                          requestAnimationFrame(() => {
+                            const freshSelection = window.getSelection();
+                            if (freshSelection && textNode.parentNode) {
+                              const newRange = document.createRange();
+                              newRange.selectNodeContents(textNode);
+                              freshSelection.removeAllRanges();
+                              freshSelection.addRange(newRange);
+                            }
+                            setActiveFormats(prev => ({ ...prev, inlineCode: false }));
+                          });
+                        } else {
+                          // Partial selection - split the code element
+                          const parent = parentCode.parentNode;
+                          if (!parent) return;
+
+                          // Find where in the code content the selection starts and ends
+                          const startOffset = codeContent.indexOf(selectedContent);
+                          const endOffset = startOffset + selectedContent.length;
+
+                          const beforeText = codeContent.substring(0, startOffset);
+                          const afterText = codeContent.substring(endOffset);
+
+                          // Create elements
+                          const fragment = document.createDocumentFragment();
+
+                          if (beforeText) {
+                            const beforeCode = document.createElement('code');
+                            beforeCode.className = 'inline-code';
+                            beforeCode.textContent = beforeText;
+                            fragment.appendChild(beforeCode);
+                          }
+
+                          // The selected text without formatting
+                          const plainText = document.createTextNode(selectedContent);
+                          fragment.appendChild(plainText);
+
+                          if (afterText) {
+                            const afterCode = document.createElement('code');
+                            afterCode.className = 'inline-code';
+                            afterCode.textContent = afterText;
+                            fragment.appendChild(afterCode);
+                          }
+
+                          parent.replaceChild(fragment, parentCode);
+
+                          requestAnimationFrame(() => {
+                            const freshSelection = window.getSelection();
+                            if (freshSelection) {
+                              const newRange = document.createRange();
+                              newRange.selectNodeContents(plainText);
+                              freshSelection.removeAllRanges();
+                              freshSelection.addRange(newRange);
+                            }
+                            setActiveFormats(prev => ({ ...prev, inlineCode: false }));
+                          });
+                        }
+                      } else if (selectedText) {
+                        // ADD code formatting - wrap in code element
+                        const codeEl = document.createElement('code');
+                        codeEl.className = 'inline-code';
+                        codeEl.textContent = selectedText;
+
+                        range.deleteContents();
+                        range.insertNode(codeEl);
+
+                        // Force selection update after DOM change
+                        requestAnimationFrame(() => {
+                          const freshSelection = window.getSelection();
+                          if (freshSelection) {
+                            const newRange = document.createRange();
+                            newRange.selectNodeContents(codeEl);
+                            freshSelection.removeAllRanges();
+                            freshSelection.addRange(newRange);
+                          }
+                          setActiveFormats(prev => ({ ...prev, inlineCode: true }));
+                        });
+                      }
+                    }}
+                    aria-pressed={activeFormats.inlineCode}
+                    className={`p-2 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95 focus:outline-none ${activeFormats.inlineCode
+                      ? 'bg-white/30 dark:bg-black/30 text-blue-400 ring-1 ring-blue-400/50'
+                      : 'hover:bg-white/20 dark:hover:bg-black/15'
+                      }`}
+                  >
+                    <Code size={16} strokeWidth={2.5} />
+                  </button>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 text-[10px] font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none shadow-lg">
+                    Código
+                  </div>
+                </div>
+
+                {/* Uppercase Button */}
+                <div className="relative group/btn">
+                  <button
+                    type="button"
+                    aria-label="Uppercase"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      const selection = window.getSelection();
+                      if (!selection || selection.rangeCount === 0) return;
+
+                      const range = selection.getRangeAt(0);
+                      const selectedText = selection.toString();
+
+                      if (selectedText) {
+                        // Check if already uppercase, if so convert to lowercase
+                        const isUppercase = selectedText === selectedText.toUpperCase();
+                        const newText = isUppercase ? selectedText.toLowerCase() : selectedText.toUpperCase();
+
+                        const textNode = document.createTextNode(newText);
+                        range.deleteContents();
+                        range.insertNode(textNode);
+
+                        // Re-select the transformed text
+                        range.selectNode(textNode);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                      }
+                    }}
+                    aria-pressed={activeFormats.uppercase}
+                    className={`p-2 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95 focus:outline-none ${activeFormats.uppercase
+                      ? 'bg-white/30 dark:bg-black/30 text-blue-400 ring-1 ring-blue-400/50'
+                      : 'hover:bg-white/20 dark:hover:bg-black/15'
+                      }`}
+                  >
+                    <CaseUpper size={16} strokeWidth={2.5} />
+                  </button>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 text-[10px] font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none shadow-lg">
+                    MAIÚSCULAS
                   </div>
                 </div>
 
@@ -1242,7 +1755,7 @@ export const EditorView: React.FC<EditorViewProps> = ({
                 </div>
 
                 {/* Font Selector */}
-                <div className="relative group/btn">
+                <div className="relative group/btn font-dropdown-container">
                   <button
                     type="button"
                     aria-label="Change Font"
@@ -1250,13 +1763,23 @@ export const EditorView: React.FC<EditorViewProps> = ({
                       e.preventDefault();
                       setFontDropdownOpen(!fontDropdownOpen);
                     }}
-                    className="p-2 hover:bg-white/20 dark:hover:bg-black/15 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95 focus:outline-none flex items-center gap-1"
+                    className={`p-2 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95 focus:outline-none flex items-center gap-1 ${activeFormats.currentFont &&
+                      !activeFormats.currentFont.includes('Inter') &&
+                      !activeFormats.inlineCode &&
+                      !activeFormats.currentFont.includes('JetBrains') &&
+                      !activeFormats.currentFont.includes('Fira') &&
+                      !activeFormats.currentFont.includes('Consolas') &&
+                      !activeFormats.currentFont.includes('Monaco') &&
+                      !activeFormats.currentFont.includes('monospace')
+                      ? 'bg-white/30 dark:bg-black/30 text-blue-400 ring-1 ring-blue-400/50'
+                      : 'hover:bg-white/20 dark:hover:bg-black/15'
+                      }`}
                   >
                     <Type size={16} strokeWidth={2.5} />
                     <ChevronDown size={12} />
                   </button>
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 text-[10px] font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none shadow-lg">
-                    Font
+                    {activeFormats.currentFont || 'Fonte'}
                   </div>
 
                   {/* Font Dropdown */}
@@ -1267,37 +1790,45 @@ export const EditorView: React.FC<EditorViewProps> = ({
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-neutral-900 dark:bg-white border border-neutral-700 dark:border-neutral-300 rounded-xl shadow-2xl p-1 min-w-[160px] max-h-[250px] overflow-y-auto z-50"
+                        className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-neutral-900 dark:bg-white border border-neutral-700 dark:border-neutral-300 rounded-xl shadow-2xl p-1 min-w-[160px] max-h-[250px] overflow-y-auto z-50 font-dropdown-container"
                       >
-                        {AVAILABLE_FONTS.map((font) => (
-                          <button
-                            key={font.name}
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              // Apply font to selected text
-                              const selection = window.getSelection();
-                              if (selection && selection.rangeCount > 0) {
-                                const range = selection.getRangeAt(0);
-                                if (!range.collapsed) {
-                                  const span = document.createElement('span');
-                                  span.style.fontFamily = font.value;
-                                  try {
-                                    range.surroundContents(span);
-                                  } catch {
-                                    // If surrounding fails (crosses element boundaries), use execCommand fallback
-                                    document.execCommand('fontName', false, font.value);
+                        {AVAILABLE_FONTS.map((font) => {
+                          const isActive = activeFormats.currentFont.includes(font.name) ||
+                            activeFormats.currentFont.includes(font.value.split(',')[0].replace(/['"]/g, ''));
+                          return (
+                            <button
+                              key={font.name}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                // Apply font to selected text
+                                const selection = window.getSelection();
+                                if (selection && selection.rangeCount > 0) {
+                                  const range = selection.getRangeAt(0);
+                                  if (!range.collapsed) {
+                                    const span = document.createElement('span');
+                                    span.style.fontFamily = font.value;
+                                    try {
+                                      range.surroundContents(span);
+                                    } catch {
+                                      // If surrounding fails (crosses element boundaries), use execCommand fallback
+                                      document.execCommand('fontName', false, font.value);
+                                    }
                                   }
                                 }
-                              }
-                              setFontDropdownOpen(false);
-                            }}
-                            className="w-full px-3 py-2 text-left text-sm text-white dark:text-black hover:bg-neutral-700 dark:hover:bg-neutral-200 rounded-lg transition-colors"
-                            style={{ fontFamily: font.value }}
-                          >
-                            {font.name}
-                          </button>
-                        ))}
+                                setFontDropdownOpen(false);
+                              }}
+                              className={`w-full px-3 py-2 text-left text-sm rounded-lg transition-colors flex items-center justify-between ${isActive
+                                ? 'bg-blue-500/20 text-blue-400 font-semibold'
+                                : 'text-white dark:text-black hover:bg-neutral-700 dark:hover:bg-neutral-200'
+                                }`}
+                              style={{ fontFamily: font.value }}
+                            >
+                              {font.name}
+                              {isActive && <Check size={14} className="text-blue-400" />}
+                            </button>
+                          );
+                        })}
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -1306,53 +1837,144 @@ export const EditorView: React.FC<EditorViewProps> = ({
 
               <div className="w-px h-6 bg-white/20 dark:bg-black/20 mx-0.5" role="separator" aria-orientation="vertical" />
 
-              {/* Text Highlight Colors */}
-              <div className="flex items-center gap-1 bg-white/5 dark:bg-black/5 rounded-xl p-1">
-                <Highlighter size={14} className="text-gray-400 dark:text-gray-500 mx-1" />
-                {[
-                  { color: '#facc15', label: 'Yellow' },
-                  { color: '#4ade80', label: 'Green' },
-                  { color: '#ff0000ff', label: 'Blood Red' },
-                  { color: '#60a5fa', label: 'Blue' },
-                  { color: '#f87171', label: 'Coral Red' },
-                  { color: '#c084fc', label: 'Purple' },
-                ].map((item) => (
-                  <div key={item.color} className="relative group/color">
-                    <button
-                      type="button"
-                      aria-label={`Highlight ${item.label}`}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        document.execCommand('hiliteColor', false, item.color);
-                      }}
-                      className="w-5 h-5 rounded-full border-2 border-white/30 dark:border-black/30 hover:scale-125 active:scale-95 transition-all shadow-inner"
-                      style={{ backgroundColor: item.color }}
-                    />
-                    {/* Tooltip Overlay */}
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 px-2 py-1 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 text-[10px] font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover/color:opacity-100 transition-opacity pointer-events-none shadow-xl z-10">
-                      {item.label}
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800 dark:border-t-gray-200" />
-                    </div>
-                  </div>
-                ))}
-                <div className="w-px h-4 bg-white/20 dark:bg-black/20 mx-0.5" />
-                <div className="relative group/color">
-                  <button
-                    type="button"
-                    aria-label="Remove Highlight"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      document.execCommand('hiliteColor', false, 'transparent');
-                    }}
-                    className="w-5 h-5 rounded-full border-2 border-white/30 dark:border-black/30 hover:scale-125 active:scale-95 transition-all flex items-center justify-center bg-gray-700 dark:bg-gray-400"
-                  >
-                    <X size={10} className="text-white dark:text-black" />
-                  </button>
-                  {/* Tooltip Overlay */}
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 px-2 py-1 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 text-[10px] font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover/color:opacity-100 transition-opacity pointer-events-none shadow-xl z-10">
-                    Remove
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800 dark:border-t-gray-200" />
-                  </div>
+              {/* Text Highlight Colors - Dropdown */}
+              <div className="relative">
+                <button
+                  type="button"
+                  aria-label="Highlight Color"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    setHighlightDropdownOpen(!highlightDropdownOpen);
+                    setTextColorDropdownOpen(false);
+                  }}
+                  className="p-2 hover:bg-white/20 dark:hover:bg-black/15 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95 focus:outline-none"
+                >
+                  <Highlighter size={16} strokeWidth={2.5} />
+                </button>
+                <AnimatePresence>
+                  {highlightDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -5, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -5, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-neutral-900 dark:bg-white border border-neutral-700 dark:border-neutral-300 rounded-xl shadow-2xl p-2 flex flex-wrap gap-1.5 z-50 w-[140px]"
+                    >
+                      {[
+                        { color: '#facc15', label: 'Amarelo' },
+                        { color: '#4ade80', label: 'Verde' },
+                        { color: '#ff0000', label: 'Vermelho' },
+                        { color: '#60a5fa', label: 'Azul' },
+                        { color: '#f87171', label: 'Coral' },
+                        { color: '#c084fc', label: 'Roxo' },
+                      ].map((item) => (
+                        <button
+                          key={item.color}
+                          type="button"
+                          title={item.label}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            document.execCommand('hiliteColor', false, item.color);
+                            setHighlightDropdownOpen(false);
+                          }}
+                          className="w-6 h-6 rounded-md border-2 border-white/20 hover:scale-110 active:scale-95 transition-all"
+                          style={{ backgroundColor: item.color }}
+                        />
+                      ))}
+                      <button
+                        type="button"
+                        title="Remover"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          document.execCommand('hiliteColor', false, 'transparent');
+                          setHighlightDropdownOpen(false);
+                        }}
+                        className="w-6 h-6 rounded-md border-2 border-white/20 hover:scale-110 active:scale-95 transition-all flex items-center justify-center bg-gray-600"
+                      >
+                        <X size={12} className="text-white" />
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Text Foreground Colors - Dropdown */}
+              <div className="relative">
+                <button
+                  type="button"
+                  aria-label="Text Color"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    setTextColorDropdownOpen(!textColorDropdownOpen);
+                    setHighlightDropdownOpen(false);
+                  }}
+                  className="p-2 hover:bg-white/20 dark:hover:bg-black/15 rounded-lg transition-all duration-150 hover:scale-110 active:scale-95 focus:outline-none"
+                >
+                  <Paintbrush size={16} strokeWidth={2.5} />
+                </button>
+                <AnimatePresence>
+                  {textColorDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -5, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -5, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-neutral-900 dark:bg-white border border-neutral-700 dark:border-neutral-300 rounded-xl shadow-2xl p-2 flex flex-wrap gap-1.5 z-50 w-[140px]"
+                    >
+                      {[
+                        { color: '#000000', label: 'Preto' },
+                        { color: '#ffffff', label: 'Branco' },
+                        { color: '#ff0000', label: 'Vermelho' },
+                        { color: '#ff6b00', label: 'Laranja' },
+                        { color: '#facc15', label: 'Amarelo' },
+                        { color: '#4ade80', label: 'Verde' },
+                        { color: '#60a5fa', label: 'Azul' },
+                        { color: '#c084fc', label: 'Roxo' },
+                      ].map((item) => (
+                        <button
+                          key={`text-${item.color}`}
+                          type="button"
+                          title={item.label}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            document.execCommand('foreColor', false, item.color);
+                            setTextColorDropdownOpen(false);
+                          }}
+                          className="w-6 h-6 rounded-md border-2 border-white/20 hover:scale-110 active:scale-95 transition-all flex items-center justify-center"
+                          style={{ backgroundColor: item.color === '#ffffff' ? '#e5e5e5' : item.color }}
+                        >
+                          <span
+                            className="text-[10px] font-bold"
+                            style={{ color: item.color === '#000000' || item.color === '#ff0000' ? '#fff' : '#000' }}
+                          >
+                            A
+                          </span>
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Separator before connector */}
+              <div className="w-px h-4 bg-white/20 dark:bg-black/20 mx-1" />
+
+              {/* Connect Text Button */}
+              <div className="relative group/btn">
+                <button
+                  type="button"
+                  aria-label="Connect Text"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    handleStartTextLinking();
+                  }}
+                  className="w-6 h-6 rounded-lg border-2 border-white/30 dark:border-black/30 hover:scale-110 active:scale-95 transition-all flex items-center justify-center bg-gray-700 dark:bg-gray-400 hover:bg-gray-600 dark:hover:bg-gray-500"
+                >
+                  <MoreVertical size={14} className="text-white dark:text-black" />
+                </button>
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 px-2 py-1 bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 text-[10px] font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none shadow-xl z-10">
+                  Interligar
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800 dark:border-t-gray-200" />
                 </div>
               </div>
             </motion.div>
@@ -1439,12 +2061,105 @@ export const EditorView: React.FC<EditorViewProps> = ({
       </AnimatePresence>
 
       {/* Click outside to close link paste modal */}
-      {linkPasteModal && (
-        <div
-          className="fixed inset-0 z-[9998]"
-          onClick={() => setLinkPasteModal(null)}
-        />
-      )}
-    </motion.div>
+      {
+        linkPasteModal && (
+          <div
+            className="fixed inset-0 z-[9998]"
+            onClick={() => setLinkPasteModal(null)}
+          />
+        )
+      }
+
+      {/* Text Linking Mode Overlay */}
+      <TextLinkingMode
+        isActive={isTextLinkingMode}
+        sourceText={sourceTextForLinking}
+        sourceBlockId={sourceBlockIdForLinking}
+        currentColor={currentLinkColor}
+        onColorChange={setCurrentLinkColor}
+        onSelectTarget={handleConfirmTextConnection}
+        onCancel={handleCancelTextLinking}
+      />
+
+      {/* Link Delete Confirmation Modal */}
+      <AnimatePresence>
+        {linkDeleteModal && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[9998]"
+              onClick={() => setLinkDeleteModal(null)}
+            />
+
+            {/* Confirmation Popup */}
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.9 }}
+              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+              className="fixed z-[9999] p-1"
+              style={{
+                left: linkDeleteModal.position.x,
+                top: linkDeleteModal.position.y,
+                transform: 'translateX(-50%)'
+              }}
+            >
+              <div className="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-neutral-900 dark:to-neutral-800 rounded-xl shadow-2xl border border-white/10 overflow-hidden min-w-[200px]">
+                {/* Header */}
+                <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
+                    <Trash2 size={16} className="text-red-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-white">Remover Link</h4>
+                    <p className="text-xs text-white/50 truncate max-w-[150px]">{linkDeleteModal.linkName}</p>
+                  </div>
+                </div>
+
+                {/* Message */}
+                <div className="px-4 py-3">
+                  <p className="text-xs text-white/60">
+                    Esta ação não pode ser desfeita.
+                  </p>
+                </div>
+
+                {/* Actions */}
+                <div className="px-3 py-2 flex items-center gap-2 border-t border-white/5 bg-black/20">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setLinkDeleteModal(null)}
+                    className="flex-1 px-3 py-2 rounded-lg text-xs font-medium text-white/70 hover:bg-white/10 transition-colors"
+                  >
+                    Cancelar
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleConfirmLinkDelete}
+                    className="flex-1 px-3 py-2 rounded-lg text-xs font-semibold bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/25 hover:shadow-red-500/40 transition-all"
+                  >
+                    Remover
+                  </motion.button>
+                </div>
+              </div>
+
+              {/* Arrow pointer */}
+              <div
+                className="absolute -top-2 left-1/2 -translate-x-1/2 w-0 h-0"
+                style={{
+                  borderLeft: '8px solid transparent',
+                  borderRight: '8px solid transparent',
+                  borderBottom: '8px solid rgb(15 23 42)'
+                }}
+              />
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </motion.div >
   );
 };

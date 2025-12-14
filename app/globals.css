@@ -65,6 +65,33 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* Normalize font metrics for consistent sizing */
+/* This prevents text from "jumping" when toggling bold */
+[contenteditable],
+[contenteditable] * {
+  font-synthesis: none;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure consistent line-height regardless of bold */
+[contenteditable] strong,
+[contenteditable] b {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  /* Slight adjustment to match regular width */
+}
+
+/* Normalize all inline text elements */
+[contenteditable] span,
+[contenteditable] em,
+[contenteditable] i,
+[contenteditable] u {
+  display: inline;
+  vertical-align: baseline;
+}
+
 /* Hide scrollbar for clean aesthetic */
 ::-webkit-scrollbar {
   width: 0px;
@@ -353,4 +380,912 @@ body {
 
 .bookmark-style:hover {
   background: rgba(245, 158, 11, 0.15) !important;
+}
+
+/* ==================== */
+/* Text Connector Menu  */
+/* ==================== */
+
+.connector-menu-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.connector-menu-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+}
+
+.connector-menu-trigger:hover {
+  background: rgba(0, 0, 0, 0.9);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.connector-menu-dropdown {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 4px;
+  backdrop-filter: blur(12px);
+  min-width: 180px;
+}
+
+.connector-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.connector-menu-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.connector-menu-item-cancel {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.connector-menu-item-cancel:hover {
+  color: #fff;
+  background: rgba(239, 68, 68, 0.2);
+}
+
+/* ==================== */
+/* Block Linking Mode   */
+/* ==================== */
+
+.block-linking-toolbar {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  padding: 12px;
+}
+
+.block-linking-toolbar-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(0, 0, 0, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 10px 16px;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.block-linking-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.block-linking-count {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.block-linking-colors {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.block-linking-color-btn {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.block-linking-color-btn:hover {
+  transform: scale(1.2);
+}
+
+.block-linking-color-btn.active {
+  border-color: #fff;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+}
+
+.block-linking-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.block-linking-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+}
+
+.block-linking-btn-cancel {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.block-linking-btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.block-linking-btn-confirm {
+  background: #fff;
+  color: #000;
+}
+
+.block-linking-btn-confirm:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.block-linking-btn-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.block-linking-hint {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  z-index: 100;
+}
+
+.block-linking-hint kbd {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin: 0 2px;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+/* Block styles when in linking mode */
+.block-linkable {
+  position: relative;
+  cursor: pointer !important;
+  transition: all 0.2s ease;
+}
+
+.block-linkable::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -8px;
+  right: -8px;
+  bottom: -4px;
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.block-linkable:hover::before {
+  opacity: 1;
+}
+
+.block-linkable.selected::before {
+  border-color: var(--link-color, #3b82f6);
+  border-style: solid;
+  opacity: 1;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.block-linkable.source::before {
+  border-color: #22c55e;
+  border-style: solid;
+  opacity: 1;
+  background: rgba(34, 197, 94, 0.1);
+}
+
+/* Connection lines animation */
+@keyframes drawLine {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.connection-line-preview {
+  filter: drop-shadow(0 0 4px var(--line-color, currentColor));
+}
+
+/* Permanent connection indicator on blocks */
+.block-has-connections {
+  position: relative;
+}
+
+.block-has-connections::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -16px;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  background: var(--connection-color, #3b82f6);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--connection-color, #3b82f6);
+}
+
+/* Connection lines SVG container */
+.block-connections-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.permanent-connection-line {
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.permanent-connection-line:hover {
+  opacity: 1;
+}
+
+/* Inline Code Styling */
+.inline-code,
+[contenteditable] code.inline-code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 0.875em;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Dark mode adjustments */
+.dark .inline-code,
+.dark [contenteditable] code.inline-code {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Light mode with dark code blocks */
+:root .inline-code,
+:root [contenteditable] code.inline-code {
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+}
+
+/* ========================================
+   ATOMIC LINK STYLES
+   Links are non-editable inline blocks
+   ======================================== */
+
+/* Wrapper that makes the link atomic (non-editable) */
+.atomic-link-wrapper {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  position: relative;
+  user-select: none;
+  cursor: pointer;
+  border-radius: 6px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  padding: 3px 10px 3px 8px;
+  margin: 0 2px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: linkAppear 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes linkAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(2px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.atomic-link-wrapper:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+  border-color: rgba(59, 130, 246, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.atomic-link-wrapper:active {
+  transform: translateY(0);
+}
+
+/* The actual link inside */
+.atomic-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none !important;
+  color: inherit !important;
+  font-size: 0.875em;
+  line-height: 1.4;
+}
+
+/* Platform logo/icon */
+.link-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dark .link-logo {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.link-logo svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Link text content */
+.link-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.link-text strong {
+  font-weight: 600;
+  color: #1e293b;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dark .link-text strong {
+  color: #f1f5f9;
+}
+
+.link-separator {
+  color: #94a3b8;
+  margin: 0 2px;
+  font-weight: 300;
+}
+
+.link-platform {
+  font-size: 0.85em;
+  font-weight: 500;
+  color: #64748b;
+  text-transform: capitalize;
+}
+
+.dark .link-platform {
+  color: #94a3b8;
+}
+
+/* Bookmark style variant */
+.atomic-link-wrapper.bookmark-style {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
+  border-color: rgba(34, 197, 94, 0.2);
+  padding: 6px 12px;
+}
+
+.atomic-link-wrapper.bookmark-style:hover {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(16, 185, 129, 0.2) 100%);
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+/* Platform-specific colors */
+.twitter-mention-link .link-logo {
+  background: #e7f5fe;
+}
+
+.dark .twitter-mention-link .link-logo {
+  background: rgba(29, 155, 240, 0.2);
+}
+
+.twitter-mention-link strong {
+  color: #1d9bf0;
+}
+
+.youtube-link .link-logo {
+  background: #fee2e2;
+}
+
+.dark .youtube-link .link-logo {
+  background: rgba(255, 0, 0, 0.15);
+}
+
+.youtube-link strong {
+  color: #dc2626;
+}
+
+.instagram-link .link-logo {
+  background: linear-gradient(135deg, #fce7f3 0%, #fef3c7 100%);
+}
+
+.dark .instagram-link .link-logo {
+  background: linear-gradient(135deg, rgba(225, 48, 108, 0.2) 0%, rgba(253, 203, 93, 0.2) 100%);
+}
+
+.instagram-link strong {
+  color: #e1306c;
+}
+
+.github-link .link-logo {
+  background: #f3f4f6;
+}
+
+.dark .github-link .link-logo {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.linkedin-link .link-logo {
+  background: #dbeafe;
+}
+
+.dark .linkedin-link .link-logo {
+  background: rgba(10, 102, 194, 0.2);
+}
+
+.linkedin-link strong {
+  color: #0a66c2;
+}
+
+.tiktok-link .link-logo {
+  background: #f3f4f6;
+}
+
+.dark .tiktok-link .link-logo {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.spotify-link .link-logo {
+  background: #dcfce7;
+}
+
+.dark .spotify-link .link-logo {
+  background: rgba(29, 185, 84, 0.2);
+}
+
+.spotify-link strong {
+  color: #1db954;
+}
+
+.reddit-link .link-logo {
+  background: #fef2f2;
+}
+
+.dark .reddit-link .link-logo {
+  background: rgba(255, 69, 0, 0.15);
+}
+
+.reddit-link strong {
+  color: #ff4500;
+}
+
+/* Delete button for atomic links (shown on hover) */
+.atomic-link-delete {
+  position: absolute;
+  right: -8px;
+  top: -8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 20px;
+  text-align: center;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+  opacity: 0;
+  transform: scale(0.5);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto !important;
+  z-index: 10;
+}
+
+.atomic-link-wrapper:hover .atomic-link-delete {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.atomic-link-delete:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.5);
+}
+
+.atomic-link-delete:active {
+  transform: scale(0.95);
+}
+
+/* Focus state for keyboard navigation */
+.atomic-link-wrapper:focus-within {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Prevent text selection inside atomic links */
+.atomic-link-wrapper * {
+  user-select: none;
+  pointer-events: none;
+}
+
+.atomic-link-wrapper a {
+  pointer-events: auto;
+}
+
+.atomic-link-wrapper .atomic-link-delete {
+  pointer-events: auto;
+}
+
+/* ========================================
+   MODERN ARROW CALLOUTS
+   Stylish arrow indicators for text
+   ======================================== */
+
+/* Base arrow callout wrapper */
+.arrow-callout {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.95em;
+  letter-spacing: 0.02em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.arrow-callout::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.arrow-callout:hover::before {
+  opacity: 0.1;
+}
+
+/* Arrow icon with animation */
+.arrow-callout .arrow-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.arrow-callout:hover .arrow-icon {
+  transform: translateX(3px);
+}
+
+.arrow-callout .arrow-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Green variant - Success/Go */
+.arrow-callout.arrow-green {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(16, 185, 129, 0.1) 100%);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+}
+
+.arrow-callout.arrow-green .arrow-icon {
+  background: linear-gradient(135deg, #22c55e, #10b981);
+  color: white;
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
+}
+
+.arrow-callout.arrow-green:hover {
+  border-color: rgba(34, 197, 94, 0.5);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+}
+
+/* Blue variant - Info */
+.arrow-callout.arrow-blue {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(99, 102, 241, 0.1) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+}
+
+.arrow-callout.arrow-blue .arrow-icon {
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  color: white;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+.arrow-callout.arrow-blue:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+/* Purple variant - Special */
+.arrow-callout.arrow-purple {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  color: #a855f7;
+}
+
+.arrow-callout.arrow-purple .arrow-icon {
+  background: linear-gradient(135deg, #a855f7, #8b5cf6);
+  color: white;
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.4);
+}
+
+.arrow-callout.arrow-purple:hover {
+  border-color: rgba(168, 85, 247, 0.5);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.2);
+}
+
+/* Orange variant - Warning */
+.arrow-callout.arrow-orange {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(234, 88, 12, 0.1) 100%);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  color: #f97316;
+}
+
+.arrow-callout.arrow-orange .arrow-icon {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: white;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.4);
+}
+
+.arrow-callout.arrow-orange:hover {
+  border-color: rgba(249, 115, 22, 0.5);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2);
+}
+
+/* Red variant - Important */
+.arrow-callout.arrow-red {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.1) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.arrow-callout.arrow-red .arrow-icon {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+}
+
+.arrow-callout.arrow-red:hover {
+  border-color: rgba(239, 68, 68, 0.5);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+/* Pink variant - Creative */
+.arrow-callout.arrow-pink {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(219, 39, 119, 0.1) 100%);
+  border: 1px solid rgba(236, 72, 153, 0.3);
+  color: #ec4899;
+}
+
+.arrow-callout.arrow-pink .arrow-icon {
+  background: linear-gradient(135deg, #ec4899, #db2777);
+  color: white;
+  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.4);
+}
+
+.arrow-callout.arrow-pink:hover {
+  border-color: rgba(236, 72, 153, 0.5);
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.2);
+}
+
+/* Cyan variant - Tip */
+.arrow-callout.arrow-cyan {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(8, 145, 178, 0.1) 100%);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  color: #06b6d4;
+}
+
+.arrow-callout.arrow-cyan .arrow-icon {
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+  color: white;
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.4);
+}
+
+.arrow-callout.arrow-cyan:hover {
+  border-color: rgba(6, 182, 212, 0.5);
+  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.2);
+}
+
+/* Dark mode adjustments */
+.dark .arrow-callout {
+  border-width: 1px;
+}
+
+.dark .arrow-callout.arrow-green {
+  color: #4ade80;
+}
+
+.dark .arrow-callout.arrow-blue {
+  color: #60a5fa;
+}
+
+.dark .arrow-callout.arrow-purple {
+  color: #c084fc;
+}
+
+.dark .arrow-callout.arrow-orange {
+  color: #fb923c;
+}
+
+.dark .arrow-callout.arrow-red {
+  color: #f87171;
+}
+
+.dark .arrow-callout.arrow-pink {
+  color: #f472b6;
+}
+
+.dark .arrow-callout.arrow-cyan {
+  color: #22d3ee;
+}
+
+/* Animation for arrow entrance */
+@keyframes arrowSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.arrow-callout {
+  animation: arrowSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Minimal arrow style (just icon + text, no background) */
+.arrow-minimal {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.arrow-minimal .arrow-icon {
+  display: inline-flex;
+  transition: transform 0.2s ease;
+}
+
+.arrow-minimal:hover .arrow-icon {
+  transform: translateX(2px);
+}
+
+.arrow-minimal.arrow-green {
+  color: #22c55e;
+}
+
+.arrow-minimal.arrow-blue {
+  color: #3b82f6;
+}
+
+.arrow-minimal.arrow-purple {
+  color: #a855f7;
+}
+
+.arrow-minimal.arrow-orange {
+  color: #f97316;
+}
+
+.arrow-minimal.arrow-red {
+  color: #ef4444;
+}
+
+.arrow-minimal.arrow-pink {
+  color: #ec4899;
+}
+
+.arrow-minimal.arrow-cyan {
+  color: #06b6d4;
+}
+
+.dark .arrow-minimal.arrow-green {
+  color: #4ade80;
+}
+
+.dark .arrow-minimal.arrow-blue {
+  color: #60a5fa;
+}
+
+.dark .arrow-minimal.arrow-purple {
+  color: #c084fc;
+}
+
+.dark .arrow-minimal.arrow-orange {
+  color: #fb923c;
+}
+
+.dark .arrow-minimal.arrow-red {
+  color: #f87171;
+}
+
+.dark .arrow-minimal.arrow-pink {
+  color: #f472b6;
+}
+
+.dark .arrow-minimal.arrow-cyan {
+  color: #22d3ee;
 }

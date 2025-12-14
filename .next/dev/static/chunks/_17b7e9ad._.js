@@ -1302,8 +1302,12 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                 "EditorView.useEffect.handleSelectionChange": ()=>{
                     const selection = window.getSelection();
                     // Validate selection
+                    // Don't hide toolbar if font dropdown is open (keeps selection visible while choosing font)
                     if (!selection || selection.isCollapsed || !editorRef.current) {
-                        setFormatToolbarPosition(null);
+                        // Only hide if font dropdown is not open
+                        if (!fontDropdownOpen) {
+                            setFormatToolbarPosition(null);
+                        }
                         return;
                     }
                     // Check if selection anchor is descendant of editor
@@ -1344,7 +1348,8 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
             })["EditorView.useEffect"];
         }
     }["EditorView.useEffect"], [
-        slashMenuOpen
+        slashMenuOpen,
+        fontDropdownOpen
     ]);
     if (!activeNote) {
         return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1353,12 +1358,12 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                 children: "Select a note from the canvas or graph to edit."
             }, void 0, false, {
                 fileName: "[project]/components/editor/EditorView.tsx",
-                lineNumber: 181,
+                lineNumber: 185,
                 columnNumber: 9
             }, ("TURBOPACK compile-time value", void 0))
         }, void 0, false, {
             fileName: "[project]/components/editor/EditorView.tsx",
-            lineNumber: 180,
+            lineNumber: 184,
             columnNumber: 7
         }, ("TURBOPACK compile-time value", void 0));
     }
@@ -2025,7 +2030,7 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                 onChange: handleFileSelect
             }, void 0, false, {
                 fileName: "[project]/components/editor/EditorView.tsx",
-                lineNumber: 755,
+                lineNumber: 759,
                 columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0)),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2061,12 +2066,12 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                             }
                         }, void 0, false, {
                             fileName: "[project]/components/editor/EditorView.tsx",
-                            lineNumber: 770,
+                            lineNumber: 774,
                             columnNumber: 11
                         }, ("TURBOPACK compile-time value", void 0))
                     }, void 0, false, {
                         fileName: "[project]/components/editor/EditorView.tsx",
-                        lineNumber: 764,
+                        lineNumber: 768,
                         columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0)),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2081,12 +2086,12 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                     className: hasUnsavedChanges ? "animate-pulse" : ""
                                 }, void 0, false, {
                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                    lineNumber: 794,
+                                    lineNumber: 798,
                                     columnNumber: 13
                                 }, ("TURBOPACK compile-time value", void 0))
                             }, void 0, false, {
                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                lineNumber: 789,
+                                lineNumber: 793,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2107,12 +2112,12 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                             className: "text-gray-500 dark:text-neutral-400"
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 804,
+                                            lineNumber: 808,
                                             columnNumber: 15
                                         }, ("TURBOPACK compile-time value", void 0))
                                     }, void 0, false, {
                                         fileName: "[project]/components/editor/EditorView.tsx",
-                                        lineNumber: 798,
+                                        lineNumber: 802,
                                         columnNumber: 13
                                     }, ("TURBOPACK compile-time value", void 0)),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$components$2f$AnimatePresence$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AnimatePresence"], {
@@ -2142,23 +2147,23 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                     title: color.label
                                                 }, color.id, false, {
                                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                                    lineNumber: 820,
+                                                    lineNumber: 824,
                                                     columnNumber: 21
                                                 }, ("TURBOPACK compile-time value", void 0)))
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 813,
+                                            lineNumber: 817,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0))
                                     }, void 0, false, {
                                         fileName: "[project]/components/editor/EditorView.tsx",
-                                        lineNumber: 811,
+                                        lineNumber: 815,
                                         columnNumber: 13
                                     }, ("TURBOPACK compile-time value", void 0))
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                lineNumber: 797,
+                                lineNumber: 801,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2172,12 +2177,12 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                     size: 20
                                 }, void 0, false, {
                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                    lineNumber: 841,
+                                    lineNumber: 845,
                                     columnNumber: 13
                                 }, ("TURBOPACK compile-time value", void 0))
                             }, void 0, false, {
                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                lineNumber: 833,
+                                lineNumber: 837,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2188,24 +2193,24 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                     size: 20
                                 }, void 0, false, {
                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                    lineNumber: 848,
+                                    lineNumber: 852,
                                     columnNumber: 13
                                 }, ("TURBOPACK compile-time value", void 0))
                             }, void 0, false, {
                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                lineNumber: 843,
+                                lineNumber: 847,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0))
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/editor/EditorView.tsx",
-                        lineNumber: 787,
+                        lineNumber: 791,
                         columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0))
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/editor/EditorView.tsx",
-                lineNumber: 763,
+                lineNumber: 767,
                 columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0)),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2233,7 +2238,7 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                         children: "#"
                                     }, void 0, false, {
                                         fileName: "[project]/components/editor/EditorView.tsx",
-                                        lineNumber: 865,
+                                        lineNumber: 869,
                                         columnNumber: 15
                                     }, ("TURBOPACK compile-time value", void 0)),
                                     tag,
@@ -2244,23 +2249,23 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                             size: 10
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 871,
+                                            lineNumber: 875,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0))
                                     }, void 0, false, {
                                         fileName: "[project]/components/editor/EditorView.tsx",
-                                        lineNumber: 867,
+                                        lineNumber: 871,
                                         columnNumber: 15
                                     }, ("TURBOPACK compile-time value", void 0))
                                 ]
                             }, tag, true, {
                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                lineNumber: 857,
+                                lineNumber: 861,
                                 columnNumber: 13
                             }, ("TURBOPACK compile-time value", void 0)))
                     }, void 0, false, {
                         fileName: "[project]/components/editor/EditorView.tsx",
-                        lineNumber: 855,
+                        lineNumber: 859,
                         columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0)),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2277,14 +2282,14 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                         size: 12
                                     }, void 0, false, {
                                         fileName: "[project]/components/editor/EditorView.tsx",
-                                        lineNumber: 885,
+                                        lineNumber: 889,
                                         columnNumber: 13
                                     }, ("TURBOPACK compile-time value", void 0)),
                                     "Add Tag"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                lineNumber: 878,
+                                lineNumber: 882,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$components$2f$AnimatePresence$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AnimatePresence"], {
@@ -2318,12 +2323,12 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                 children: "Select a tag"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                                lineNumber: 899,
+                                                lineNumber: 903,
                                                 columnNumber: 19
                                             }, ("TURBOPACK compile-time value", void 0))
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 898,
+                                            lineNumber: 902,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2336,7 +2341,7 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                         children: availableTags.length === 0 ? 'No tags available' : 'All tags added'
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/editor/EditorView.tsx",
-                                                        lineNumber: 904,
+                                                        lineNumber: 908,
                                                         columnNumber: 23
                                                     }, ("TURBOPACK compile-time value", void 0)),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -2344,13 +2349,13 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                         children: "Create tags in Settings"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/editor/EditorView.tsx",
-                                                        lineNumber: 907,
+                                                        lineNumber: 911,
                                                         columnNumber: 23
                                                     }, ("TURBOPACK compile-time value", void 0))
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                                lineNumber: 903,
+                                                lineNumber: 907,
                                                 columnNumber: 21
                                             }, ("TURBOPACK compile-time value", void 0)) : availableTags.filter((tag)=>!activeNote.tags?.includes(tag.name)).map((tag)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$render$2f$components$2f$motion$2f$proxy$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["motion"].button, {
                                                     whileHover: {
@@ -2366,7 +2371,7 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                             }
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                                            lineNumber: 921,
+                                                            lineNumber: 925,
                                                             columnNumber: 27
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2377,41 +2382,41 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                                            lineNumber: 925,
+                                                            lineNumber: 929,
                                                             columnNumber: 27
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     ]
                                                 }, tag.id, true, {
                                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                                    lineNumber: 915,
+                                                    lineNumber: 919,
                                                     columnNumber: 25
                                                 }, ("TURBOPACK compile-time value", void 0)))
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 901,
+                                            lineNumber: 905,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0))
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                    lineNumber: 891,
+                                    lineNumber: 895,
                                     columnNumber: 15
                                 }, ("TURBOPACK compile-time value", void 0))
                             }, void 0, false, {
                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                lineNumber: 889,
+                                lineNumber: 893,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0))
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/editor/EditorView.tsx",
-                        lineNumber: 877,
+                        lineNumber: 881,
                         columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0))
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/editor/EditorView.tsx",
-                lineNumber: 854,
+                lineNumber: 858,
                 columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0)),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2435,12 +2440,12 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                         className: "w-1.5 h-1.5 bg-black dark:bg-white rounded-full"
                                     }, void 0, false, {
                                         fileName: "[project]/components/editor/EditorView.tsx",
-                                        lineNumber: 950,
+                                        lineNumber: 954,
                                         columnNumber: 17
                                     }, ("TURBOPACK compile-time value", void 0))
                                 }, void 0, false, {
                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                    lineNumber: 949,
+                                    lineNumber: 953,
                                     columnNumber: 15
                                 }, ("TURBOPACK compile-time value", void 0)),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2457,7 +2462,7 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                     children: "•"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                                    lineNumber: 961,
+                                                    lineNumber: 965,
                                                     columnNumber: 21
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 block.type === 'todo' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2474,7 +2479,7 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                     }
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                                    lineNumber: 964,
+                                                    lineNumber: 968,
                                                     columnNumber: 21
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 block.type !== 'image' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$editor$2f$ContentBlock$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["ContentBlock"], {
@@ -2496,7 +2501,7 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                     onFocus: setFocusedBlockId
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                                    lineNumber: 977,
+                                                    lineNumber: 981,
                                                     columnNumber: 21
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 block.type === 'image' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$editor$2f$ImageBlock$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["ImageBlock"], {
@@ -2506,13 +2511,13 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                     className: "w-full"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                                    lineNumber: 997,
+                                                    lineNumber: 1001,
                                                     columnNumber: 21
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 959,
+                                            lineNumber: 963,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2535,12 +2540,12 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                             className: "text-gray-500 dark:text-neutral-400"
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                                            lineNumber: 1020,
+                                                            lineNumber: 1024,
                                                             columnNumber: 25
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/editor/EditorView.tsx",
-                                                        lineNumber: 1011,
+                                                        lineNumber: 1015,
                                                         columnNumber: 23
                                                     }, ("TURBOPACK compile-time value", void 0)),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$components$2f$AnimatePresence$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AnimatePresence"], {
@@ -2576,33 +2581,33 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                                         className: "mx-auto text-gray-400"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/components/editor/EditorView.tsx",
-                                                                        lineNumber: 1043,
+                                                                        lineNumber: 1047,
                                                                         columnNumber: 57
                                                                     }, ("TURBOPACK compile-time value", void 0))
                                                                 }, color.id, false, {
                                                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                                                    lineNumber: 1033,
+                                                                    lineNumber: 1037,
                                                                     columnNumber: 31
                                                                 }, ("TURBOPACK compile-time value", void 0)))
                                                         }, void 0, false, {
                                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                                            lineNumber: 1026,
+                                                            lineNumber: 1030,
                                                             columnNumber: 27
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/editor/EditorView.tsx",
-                                                        lineNumber: 1024,
+                                                        lineNumber: 1028,
                                                         columnNumber: 23
                                                     }, ("TURBOPACK compile-time value", void 0))
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                                lineNumber: 1010,
+                                                lineNumber: 1014,
                                                 columnNumber: 21
                                             }, ("TURBOPACK compile-time value", void 0))
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1007,
+                                            lineNumber: 1011,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         block.type === 'code' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2614,40 +2619,40 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                 className: "text-green-600"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                                lineNumber: 1060,
+                                                lineNumber: 1064,
                                                 columnNumber: 51
                                             }, ("TURBOPACK compile-time value", void 0)) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$copy$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Copy$3e$__["Copy"], {
                                                 size: 14
                                             }, void 0, false, {
                                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                                lineNumber: 1060,
+                                                lineNumber: 1064,
                                                 columnNumber: 100
                                             }, ("TURBOPACK compile-time value", void 0))
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1055,
+                                            lineNumber: 1059,
                                             columnNumber: 19
                                         }, ("TURBOPACK compile-time value", void 0))
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                    lineNumber: 953,
+                                    lineNumber: 957,
                                     columnNumber: 15
                                 }, ("TURBOPACK compile-time value", void 0))
                             ]
                         }, block.id, true, {
                             fileName: "[project]/components/editor/EditorView.tsx",
-                            lineNumber: 942,
+                            lineNumber: 946,
                             columnNumber: 13
                         }, ("TURBOPACK compile-time value", void 0)))
                 }, void 0, false, {
                     fileName: "[project]/components/editor/EditorView.tsx",
-                    lineNumber: 940,
+                    lineNumber: 944,
                     columnNumber: 9
                 }, ("TURBOPACK compile-time value", void 0))
             }, void 0, false, {
                 fileName: "[project]/components/editor/EditorView.tsx",
-                lineNumber: 939,
+                lineNumber: 943,
                 columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0)),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2661,14 +2666,14 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                 size: 16
                             }, void 0, false, {
                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                lineNumber: 1072,
+                                lineNumber: 1076,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             " Add Block"
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/editor/EditorView.tsx",
-                        lineNumber: 1071,
+                        lineNumber: 1075,
                         columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0)),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2684,20 +2689,20 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                 className: isAiLoading ? "animate-spin" : ""
                             }, void 0, false, {
                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                lineNumber: 1079,
+                                lineNumber: 1083,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             isAiLoading ? "Thinking..." : "Gemini Expand"
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/editor/EditorView.tsx",
-                        lineNumber: 1074,
+                        lineNumber: 1078,
                         columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0))
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/editor/EditorView.tsx",
-                lineNumber: 1070,
+                lineNumber: 1074,
                 columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0)),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$components$2f$AnimatePresence$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AnimatePresence"], {
@@ -2725,7 +2730,7 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                             children: "Basic Blocks"
                         }, void 0, false, {
                             fileName: "[project]/components/editor/EditorView.tsx",
-                            lineNumber: 1094,
+                            lineNumber: 1098,
                             columnNumber: 13
                         }, ("TURBOPACK compile-time value", void 0)),
                         [
@@ -2781,7 +2786,7 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                         className: "text-gray-500 dark:text-neutral-400"
                                     }, void 0, false, {
                                         fileName: "[project]/components/editor/EditorView.tsx",
-                                        lineNumber: 1119,
+                                        lineNumber: 1123,
                                         columnNumber: 17
                                     }, ("TURBOPACK compile-time value", void 0)),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2789,24 +2794,24 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                         children: item.label
                                     }, void 0, false, {
                                         fileName: "[project]/components/editor/EditorView.tsx",
-                                        lineNumber: 1120,
+                                        lineNumber: 1124,
                                         columnNumber: 17
                                     }, ("TURBOPACK compile-time value", void 0))
                                 ]
                             }, item.type, true, {
                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                lineNumber: 1106,
+                                lineNumber: 1110,
                                 columnNumber: 15
                             }, ("TURBOPACK compile-time value", void 0)))
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/editor/EditorView.tsx",
-                    lineNumber: 1087,
+                    lineNumber: 1091,
                     columnNumber: 11
                 }, ("TURBOPACK compile-time value", void 0))
             }, void 0, false, {
                 fileName: "[project]/components/editor/EditorView.tsx",
-                lineNumber: 1085,
+                lineNumber: 1089,
                 columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0)),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2d$dom$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["createPortal"])(/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$components$2f$AnimatePresence$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AnimatePresence"], {
@@ -2845,7 +2850,7 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                             className: "absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-black/95 dark:bg-white/95 rotate-45 border-r border-b border-white/10 dark:border-black/10"
                         }, void 0, false, {
                             fileName: "[project]/components/editor/EditorView.tsx",
-                            lineNumber: 1147,
+                            lineNumber: 1151,
                             columnNumber: 15
                         }, ("TURBOPACK compile-time value", void 0)),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2868,12 +2873,12 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                 strokeWidth: 2.5
                                             }, void 0, false, {
                                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                                lineNumber: 1160,
+                                                lineNumber: 1164,
                                                 columnNumber: 21
                                             }, ("TURBOPACK compile-time value", void 0))
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1153,
+                                            lineNumber: 1157,
                                             columnNumber: 19
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2885,19 +2890,19 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                     children: "⌘B"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                                    lineNumber: 1164,
+                                                    lineNumber: 1168,
                                                     columnNumber: 21
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1162,
+                                            lineNumber: 1166,
                                             columnNumber: 19
                                         }, ("TURBOPACK compile-time value", void 0))
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                    lineNumber: 1152,
+                                    lineNumber: 1156,
                                     columnNumber: 17
                                 }, ("TURBOPACK compile-time value", void 0)),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2917,12 +2922,12 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                 strokeWidth: 2.5
                                             }, void 0, false, {
                                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                                lineNumber: 1177,
+                                                lineNumber: 1181,
                                                 columnNumber: 21
                                             }, ("TURBOPACK compile-time value", void 0))
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1170,
+                                            lineNumber: 1174,
                                             columnNumber: 19
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2934,19 +2939,19 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                     children: "⌘I"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                                    lineNumber: 1181,
+                                                    lineNumber: 1185,
                                                     columnNumber: 21
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1179,
+                                            lineNumber: 1183,
                                             columnNumber: 19
                                         }, ("TURBOPACK compile-time value", void 0))
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                    lineNumber: 1169,
+                                    lineNumber: 1173,
                                     columnNumber: 17
                                 }, ("TURBOPACK compile-time value", void 0)),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2966,12 +2971,12 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                 strokeWidth: 2.5
                                             }, void 0, false, {
                                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                                lineNumber: 1194,
+                                                lineNumber: 1198,
                                                 columnNumber: 21
                                             }, ("TURBOPACK compile-time value", void 0))
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1187,
+                                            lineNumber: 1191,
                                             columnNumber: 19
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2983,19 +2988,19 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                     children: "⌘U"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                                    lineNumber: 1198,
+                                                    lineNumber: 1202,
                                                     columnNumber: 21
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1196,
+                                            lineNumber: 1200,
                                             columnNumber: 19
                                         }, ("TURBOPACK compile-time value", void 0))
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                    lineNumber: 1186,
+                                    lineNumber: 1190,
                                     columnNumber: 17
                                 }, ("TURBOPACK compile-time value", void 0)),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3014,12 +3019,12 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                 strokeWidth: 2.5
                                             }, void 0, false, {
                                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                                lineNumber: 1210,
+                                                lineNumber: 1214,
                                                 columnNumber: 21
                                             }, ("TURBOPACK compile-time value", void 0))
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1204,
+                                            lineNumber: 1208,
                                             columnNumber: 19
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3027,20 +3032,20 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                             children: "Strikethrough"
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1212,
+                                            lineNumber: 1216,
                                             columnNumber: 19
                                         }, ("TURBOPACK compile-time value", void 0))
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                    lineNumber: 1203,
+                                    lineNumber: 1207,
                                     columnNumber: 17
                                 }, ("TURBOPACK compile-time value", void 0)),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     className: "w-px h-4 bg-white/20 dark:bg-black/20 mx-0.5"
                                 }, void 0, false, {
                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                    lineNumber: 1218,
+                                    lineNumber: 1222,
                                     columnNumber: 17
                                 }, ("TURBOPACK compile-time value", void 0)),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3064,12 +3069,12 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                 strokeWidth: 2.5
                                             }, void 0, false, {
                                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                                lineNumber: 1236,
+                                                lineNumber: 1240,
                                                 columnNumber: 21
                                             }, ("TURBOPACK compile-time value", void 0))
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1222,
+                                            lineNumber: 1226,
                                             columnNumber: 19
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3081,23 +3086,23 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                     children: "⌘K"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                                    lineNumber: 1240,
+                                                    lineNumber: 1244,
                                                     columnNumber: 21
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1238,
+                                            lineNumber: 1242,
                                             columnNumber: 19
                                         }, ("TURBOPACK compile-time value", void 0))
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                    lineNumber: 1221,
+                                    lineNumber: 1225,
                                     columnNumber: 17
                                 }, ("TURBOPACK compile-time value", void 0)),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "relative group/btn",
+                                    className: "relative group/btn font-dropdown-container",
                                     children: [
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                             type: "button",
@@ -3113,20 +3118,20 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                     strokeWidth: 2.5
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                                    lineNumber: 1255,
+                                                    lineNumber: 1259,
                                                     columnNumber: 21
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$down$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronDown$3e$__["ChevronDown"], {
                                                     size: 12
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                                    lineNumber: 1256,
+                                                    lineNumber: 1260,
                                                     columnNumber: 21
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1246,
+                                            lineNumber: 1250,
                                             columnNumber: 19
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3134,7 +3139,7 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                             children: "Font"
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1258,
+                                            lineNumber: 1262,
                                             columnNumber: 19
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$components$2f$AnimatePresence$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AnimatePresence"], {
@@ -3157,7 +3162,7 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                 transition: {
                                                     duration: 0.15
                                                 },
-                                                className: "absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-neutral-900 dark:bg-white border border-neutral-700 dark:border-neutral-300 rounded-xl shadow-2xl p-1 min-w-[160px] max-h-[250px] overflow-y-auto z-50",
+                                                className: "absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-neutral-900 dark:bg-white border border-neutral-700 dark:border-neutral-300 rounded-xl shadow-2xl p-1 min-w-[160px] max-h-[250px] overflow-y-auto z-50 font-dropdown-container",
                                                 children: AVAILABLE_FONTS.map((font)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                                         onMouseDown: (e)=>{
                                                             e.preventDefault();
@@ -3186,29 +3191,29 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                         children: font.name
                                                     }, font.name, false, {
                                                         fileName: "[project]/components/editor/EditorView.tsx",
-                                                        lineNumber: 1273,
+                                                        lineNumber: 1277,
                                                         columnNumber: 27
                                                     }, ("TURBOPACK compile-time value", void 0)))
                                             }, void 0, false, {
                                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                                lineNumber: 1265,
+                                                lineNumber: 1269,
                                                 columnNumber: 23
                                             }, ("TURBOPACK compile-time value", void 0))
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1263,
+                                            lineNumber: 1267,
                                             columnNumber: 19
                                         }, ("TURBOPACK compile-time value", void 0))
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                    lineNumber: 1245,
+                                    lineNumber: 1249,
                                     columnNumber: 17
                                 }, ("TURBOPACK compile-time value", void 0))
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/editor/EditorView.tsx",
-                            lineNumber: 1150,
+                            lineNumber: 1154,
                             columnNumber: 15
                         }, ("TURBOPACK compile-time value", void 0)),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3217,7 +3222,7 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                             "aria-orientation": "vertical"
                         }, void 0, false, {
                             fileName: "[project]/components/editor/EditorView.tsx",
-                            lineNumber: 1307,
+                            lineNumber: 1311,
                             columnNumber: 15
                         }, ("TURBOPACK compile-time value", void 0)),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3228,7 +3233,7 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                     className: "text-gray-400 dark:text-gray-500 mx-1"
                                 }, void 0, false, {
                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                    lineNumber: 1311,
+                                    lineNumber: 1315,
                                     columnNumber: 17
                                 }, ("TURBOPACK compile-time value", void 0)),
                                 [
@@ -3272,7 +3277,7 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                 }
                                             }, void 0, false, {
                                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                                lineNumber: 1321,
+                                                lineNumber: 1325,
                                                 columnNumber: 21
                                             }, ("TURBOPACK compile-time value", void 0)),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3283,26 +3288,26 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                         className: "absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800 dark:border-t-gray-200"
                                                     }, void 0, false, {
                                                         fileName: "[project]/components/editor/EditorView.tsx",
-                                                        lineNumber: 1334,
+                                                        lineNumber: 1338,
                                                         columnNumber: 23
                                                     }, ("TURBOPACK compile-time value", void 0))
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                                lineNumber: 1332,
+                                                lineNumber: 1336,
                                                 columnNumber: 21
                                             }, ("TURBOPACK compile-time value", void 0))
                                         ]
                                     }, item.color, true, {
                                         fileName: "[project]/components/editor/EditorView.tsx",
-                                        lineNumber: 1320,
+                                        lineNumber: 1324,
                                         columnNumber: 19
                                     }, ("TURBOPACK compile-time value", void 0))),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                     className: "w-px h-4 bg-white/20 dark:bg-black/20 mx-0.5"
                                 }, void 0, false, {
                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                    lineNumber: 1338,
+                                    lineNumber: 1342,
                                     columnNumber: 17
                                 }, ("TURBOPACK compile-time value", void 0)),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3321,12 +3326,12 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                 className: "text-white dark:text-black"
                                             }, void 0, false, {
                                                 fileName: "[project]/components/editor/EditorView.tsx",
-                                                lineNumber: 1349,
+                                                lineNumber: 1353,
                                                 columnNumber: 21
                                             }, ("TURBOPACK compile-time value", void 0))
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1340,
+                                            lineNumber: 1344,
                                             columnNumber: 19
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3337,36 +3342,36 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                                     className: "absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800 dark:border-t-gray-200"
                                                 }, void 0, false, {
                                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                                    lineNumber: 1354,
+                                                    lineNumber: 1358,
                                                     columnNumber: 21
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1352,
+                                            lineNumber: 1356,
                                             columnNumber: 19
                                         }, ("TURBOPACK compile-time value", void 0))
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                    lineNumber: 1339,
+                                    lineNumber: 1343,
                                     columnNumber: 17
                                 }, ("TURBOPACK compile-time value", void 0))
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/editor/EditorView.tsx",
-                            lineNumber: 1310,
+                            lineNumber: 1314,
                             columnNumber: 15
                         }, ("TURBOPACK compile-time value", void 0))
                     ]
                 }, "format-toolbar", true, {
                     fileName: "[project]/components/editor/EditorView.tsx",
-                    lineNumber: 1131,
+                    lineNumber: 1135,
                     columnNumber: 13
                 }, ("TURBOPACK compile-time value", void 0))
             }, void 0, false, {
                 fileName: "[project]/components/editor/EditorView.tsx",
-                lineNumber: 1129,
+                lineNumber: 1133,
                 columnNumber: 9
             }, ("TURBOPACK compile-time value", void 0)), document.body),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2f$ConfirmationModal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["ConfirmationModal"], {
@@ -3382,7 +3387,7 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                 onCancel: ()=>setImageToDelete(null)
             }, void 0, false, {
                 fileName: "[project]/components/editor/EditorView.tsx",
-                lineNumber: 1364,
+                lineNumber: 1368,
                 columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0)),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$components$2f$AnimatePresence$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AnimatePresence"], {
@@ -3420,7 +3425,7 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                             children: "Colar como"
                         }, void 0, false, {
                             fileName: "[project]/components/editor/EditorView.tsx",
-                            lineNumber: 1394,
+                            lineNumber: 1398,
                             columnNumber: 13
                         }, ("TURBOPACK compile-time value", void 0)),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3435,20 +3440,20 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                             children: "@"
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1404,
+                                            lineNumber: 1408,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                             children: "Menção"
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1405,
+                                            lineNumber: 1409,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0))
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                    lineNumber: 1400,
+                                    lineNumber: 1404,
                                     columnNumber: 15
                                 }, ("TURBOPACK compile-time value", void 0)),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3460,20 +3465,20 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                             children: "◇"
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1412,
+                                            lineNumber: 1416,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                             children: "Integrar tweet"
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1413,
+                                            lineNumber: 1417,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0))
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                    lineNumber: 1408,
+                                    lineNumber: 1412,
                                     columnNumber: 15
                                 }, ("TURBOPACK compile-time value", void 0)),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3485,20 +3490,20 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                             children: "🔖"
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1420,
+                                            lineNumber: 1424,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                             children: "Criar marcador"
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1421,
+                                            lineNumber: 1425,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0))
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                    lineNumber: 1416,
+                                    lineNumber: 1420,
                                     columnNumber: 15
                                 }, ("TURBOPACK compile-time value", void 0)),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -3510,26 +3515,26 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                                             className: "text-neutral-400"
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1428,
+                                            lineNumber: 1432,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                             children: "URL"
                                         }, void 0, false, {
                                             fileName: "[project]/components/editor/EditorView.tsx",
-                                            lineNumber: 1429,
+                                            lineNumber: 1433,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0))
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/components/editor/EditorView.tsx",
-                                    lineNumber: 1424,
+                                    lineNumber: 1428,
                                     columnNumber: 15
                                 }, ("TURBOPACK compile-time value", void 0))
                             ]
                         }, void 0, true, {
                             fileName: "[project]/components/editor/EditorView.tsx",
-                            lineNumber: 1399,
+                            lineNumber: 1403,
                             columnNumber: 13
                         }, ("TURBOPACK compile-time value", void 0)),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3537,18 +3542,18 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                             children: linkPasteModal.url
                         }, void 0, false, {
                             fileName: "[project]/components/editor/EditorView.tsx",
-                            lineNumber: 1434,
+                            lineNumber: 1438,
                             columnNumber: 13
                         }, ("TURBOPACK compile-time value", void 0))
                     ]
                 }, void 0, true, {
                     fileName: "[project]/components/editor/EditorView.tsx",
-                    lineNumber: 1380,
+                    lineNumber: 1384,
                     columnNumber: 11
                 }, ("TURBOPACK compile-time value", void 0))
             }, void 0, false, {
                 fileName: "[project]/components/editor/EditorView.tsx",
-                lineNumber: 1378,
+                lineNumber: 1382,
                 columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0)),
             linkPasteModal && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -3556,13 +3561,13 @@ const EditorView = ({ activeNote, onUpdateNote, onDeleteNote, hasUnsavedChanges,
                 onClick: ()=>setLinkPasteModal(null)
             }, void 0, false, {
                 fileName: "[project]/components/editor/EditorView.tsx",
-                lineNumber: 1443,
+                lineNumber: 1447,
                 columnNumber: 9
             }, ("TURBOPACK compile-time value", void 0))
         ]
     }, void 0, true, {
         fileName: "[project]/components/editor/EditorView.tsx",
-        lineNumber: 745,
+        lineNumber: 749,
         columnNumber: 5
     }, ("TURBOPACK compile-time value", void 0));
 };

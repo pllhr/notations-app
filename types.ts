@@ -3,7 +3,6 @@ export enum ViewMode {
   EDITOR = 'EDITOR',
   CANVAS = 'CANVAS',
   GRAPH = 'GRAPH',
-  SIEVE = 'SIEVE',
   ADMIN = 'ADMIN'
 }
 
@@ -20,12 +19,40 @@ export interface Point {
   y: number;
 }
 
+// Connection between specific text selections within notes
+export interface TextConnection {
+  id: string;
+  // Source text info
+  sourceBlockId: string;
+  sourceText: string; // The actual selected text (for matching)
+  // Target text info (can be in same or different block)
+  targetBlockId: string;
+  targetText: string; // The target text to connect to
+  targetNoteId?: string; // If connecting to another note
+  // Visual properties
+  color: string;
+  createdAt: number;
+}
+
+// Available connection colors
+export const CONNECTION_COLORS = [
+  '#ef4444', // red
+  '#f97316', // orange
+  '#eab308', // yellow
+  '#22c55e', // green
+  '#06b6d4', // cyan
+  '#3b82f6', // blue
+  '#8b5cf6', // purple
+  '#ec4899', // pink
+];
+
 export interface NoteBlock {
   id: string;
   type: 'paragraph' | 'heading' | 'todo' | 'bullet' | 'blockquote' | 'code' | 'image';
   content: string;
   checked?: boolean;
-  highlightColor?: string; // Optional background/highlight color for the block
+  highlightColor?: string;
+  textConnections?: TextConnection[]; // Connections from text in this block
 }
 
 export interface Note {
